@@ -12,6 +12,8 @@
 #include <cmath>
 #include <cstring>
 
+#include "ForwardViewTargets.h"
+
 DECLARE_CYCLE_STAT("Frustum Cull", STAT_FrustumCull);
 DECLARE_CYCLE_STAT("Gather Elements", STAT_GatherElements);
 
@@ -79,10 +81,27 @@ void FSceneRenderer::RenderDeferredLighting(FRenderer* Renderer, const FDeferred
 		Renderer->DrawDeferredLighting(View, Targets, RenderData.VisiblePointLights);
 }
 
-void FSceneRenderer::RenderToneMap(FRenderer* Renderer, const FDeferredViewTargets& Targets)
+void FSceneRenderer::RenderToneMapDeferred(FRenderer* Renderer, const FDeferredViewTargets& Targets)
 {
 	if (Renderer)
-		Renderer->DrawToneMap(Targets);
+		Renderer->DrawToneMap(Targets.LightingHDR.get(), Targets.Depth.get());
+}
+
+void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height)
+{
+	if (!Renderer)
+		return;
+
+	RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
+	PrepareDrawData(Renderer, RenderData);
+	Renderer->RenderOpaque(View, RenderData.RenderQueue);
+	RenderCommand::EndRenderPass();
+}
+
+void FSceneRenderer::RenderToneMapForward(FRenderer* Renderer, const FForwardViewTargets& Targets)
+{
+	if (Renderer)
+		Renderer->DrawToneMap(Targets.LightingHDR.get(), Targets.Depth.get());
 }
 
 // 반투명 렌더링

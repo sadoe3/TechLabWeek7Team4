@@ -2,43 +2,30 @@
 
 #include "Editor/HitoriEd/EditorEngine.h"
 
-#include "Core/EngineStatics.h"
-#include "Core/EngineTimer.h"
-#include "Core/StatOverlay.h"
-#include "Input/InputSystem.h"
-#include "Launch/LaunchEngineLoop.h"
-
-
-#include "ObjectSystem/ObjectFactory.h"
-
-#include "Render/GeometryGenerator.h"
-
-#include "Engine/Level.h"
-#include "Engine/World.h"
-#include "Engine/GameInstance.h"
-#include "Engine/GameViewportClient.h"
-
-
-#include "Render/Renderer.h"
-
+#include "Asset/AssetManager.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
-#include "Component/PointLightComponent.h"
-#include "GameFramework/Actor/LightActor.h"
 #include "Component/ExponentialHeightFogComponent.h"
-
-#include "Asset/AssetManager.h"
-#include "Render/RenderResourceManager.h"
-#include "Render/SceneRenderer.h"
-
+#include "Core/EngineLog.h"
+#include "Core/StatOverlay.h"
+#include "Core/Stats/LightweightStats.h"
 #include "Editor/HitoriEd/EditorFileUtils.h"
 #include "Editor/Outliner/OutlinerPanel.h"
+#include "Editor/Viewports/ForwardEditorViewportClient.h"
+#include "Engine/GameInstance.h"
+#include "Engine/DeferredGameViewportClient.h"
+#include "Engine/ForwardGameViewportClient.h"
+#include "Engine/Level.h"
+#include "Engine/World.h"
+#include "GameFramework/Actor/LightActor.h"
+#include "Input/InputSystem.h"
+#include "Launch/LaunchEngineLoop.h"
+#include "ObjectSystem/ObjectFactory.h"
+#include "Render/ForwardViewTargets.h"
 #include "Render/RenderCommand.h"
+#include "Render/Renderer.h"
+#include "Render/SceneRenderer.h"
 #include "UObject/UObjectIterator.h"
-
-
-#include "Core/EngineLog.h"
-#include "Core/Stats/LightweightStats.h"
 
 namespace {
 DECLARE_CYCLE_STAT("Viewport Update", STAT_ViewportUpdate);
@@ -48,8 +35,6 @@ DECLARE_CYCLE_STAT("Capture World", STAT_CaptureWorld);
 DECLARE_CYCLE_STAT("Build Render Queue", STAT_BuildRenderQueue);
 DECLARE_CYCLE_STAT("ImGui", STAT_ImGui);
 } // namespace
-
-#include "Core/SplashScreen.h"
 
 FEngineConfig UEditorEngine::GetConfig() const {
 	FEngineConfig Desc;
@@ -632,7 +617,6 @@ void UEditorEngine::RenderViewports() {
 					FSceneRenderer SceneRenderer(CurrentWorld, SceneView, GameClient->GetRenderData());
 					SceneRenderer.InitViews(Renderer);
 
-
 					RenderGameFrame(GameClient, SceneView, SceneRenderer, bIsSIEMode);
 						
 					break;
@@ -686,14 +670,15 @@ void UEditorEngine::RenderViewports() {
 }
 
 // 게임 뷰포트 화면을 렌더링한다
-void UEditorEngine::RenderGameFrame(FGameViewportClient* GameClient, const FSceneView& SceneView, FSceneRenderer& SceneRenderer, bool bIsSIEMode)
+void UEditorEngine::RenderGameFrameDeferred(FDeferredGameViewportClient* GameClient, const FSceneView& SceneView, FSceneRenderer& SceneRenderer, bool bIsSIEMode)
 {
 	if (!GameClient) return;
 
 	FSceneRenderOptions Options;
 	Options.bEnableFXAA = SettingsPanel && SettingsPanel->GetSettings().bEnableFXAA;
+	// FDeferredViewTargets& Targets = GameClient->GetDeferredViewTargets();
 	FDeferredViewTargets& Targets = GameClient->GetViewTargets();
-	if (!RenderSceneFrame(Targets, SceneView, SceneRenderer, GameClient->GetWorld(), Options))
+	if (!RenderSceneFrameDeferred(Targets, SceneView, SceneRenderer, GameClient->GetWorld(), Options))
 		return;
 	FTexture2D* DepthTarget = Targets.Depth.get();
 	const uint32 Width = Targets.SceneColor->GetWidth();
@@ -718,8 +703,41 @@ void UEditorEngine::RenderGameFrame(FGameViewportClient* GameClient, const FScen
 	RenderCommand::EndRenderPass();
 }
 
-bool UEditorEngine::RenderSceneFrame(FDeferredViewTargets& Targets, const FSceneView& SceneView,
-	FSceneRenderer& SceneRenderer, UWorld* TargetWorld, const FSceneRenderOptions& Options)
+void UEditorEngine::RenderGameFrameForward(FForwardGameViewportClient* GameClient, const FSceneView& SceneView, FSceneRenderer& SceneRenderer, bool bIsSIEMode)
+{
+	if (!GameClient) return;
+
+	FSceneRenderOptions Options;
+	Options.bEnableFXAA = SettingsPanel && SettingsPanel->GetSettings().bEnableFXAA;
+	// FDeferredViewTargets& Targets = GameClient->GetDeferredViewTargets();
+	FForwardViewTargets& Targets = GameClient->GetViewTargets();
+	if (!RenderSceneFrameForward(Targets, SceneView, SceneRenderer, GameClient->GetWorld(), Options))
+		return;
+	FTexture2D* DepthTarget = Targets.Depth.get();
+	const uint32 Width = Targets.SceneColor->GetWidth();
+	const uint32 Height = Targets.SceneColor->GetHeight();
+
+	if (bIsSIEMode)
+	{
+		const FViewportSettings ViewportSetting{ 0, 0, Width, Height, 0.0f, 1.0f };
+
+		if (Outline->GetTarget()) {
+			OutlineRenderer->OnRender(*Outline, SceneView.ViewProjectionMatrix,
+				ViewportSetting);
+		}
+
+		if (Gizmo->GetTarget()) {
+			RenderCommand::ClearDepthStencil(DepthTarget);
+			GizmoRenderer->OnRender(*Gizmo, SceneView.ViewProjectionMatrix,
+				SceneView.ViewLocation,
+				!SceneView.bIsPerspective);
+		}
+	}
+	RenderCommand::EndRenderPass();
+}
+
+bool UEditorEngine::RenderSceneFrameDeferred(FDeferredViewTargets& Targets, const FSceneView& SceneView,
+                                             FSceneRenderer& SceneRenderer, UWorld* TargetWorld, const FSceneRenderOptions& Options)
 {
 	FTexture2D* ColorTarget = Targets.SceneColor.get();
 	FTexture2D* DepthTarget = Targets.Depth.get();
@@ -746,7 +764,62 @@ bool UEditorEngine::RenderSceneFrame(FDeferredViewTargets& Targets, const FScene
 	if (SkyboxRenderer)
 		SkyboxRenderer->OnRender(SceneView.ViewProjectionMatrix, SceneView.ViewLocation);
 	if (Options.bDrawPrimitives)
-		SceneRenderer.RenderToneMap(Renderer, Targets);
+		SceneRenderer.RenderToneMapDeferred(Renderer, Targets);
+	RenderCommand::EndRenderPass();
+
+	// Opaque/sky fog, then translucent objects using their own distance to the camera.
+	RenderCommand::BindRenderPassNoClear(ColorTarget, DepthTarget, Width, Height);
+	// FireBall adds color to opaque surfaces, so composite it before their fog.
+	if (Options.bDrawPrimitives)
+		RenderFireBall(TargetWorld, SceneView, DepthTarget, ColorTarget);
+	const bool bHasFog = Options.bDrawPrimitives && Options.bEnableFog &&
+		RenderHeightFog(TargetWorld, SceneView, DepthTarget, ColorTarget);
+	if (Options.bDrawPrimitives)
+	{
+		FConstantBuffer* FogConstants = HeightFogRenderer
+			? HeightFogRenderer->GetTranslucentFogConstants(bHasFog) : nullptr;
+		SceneRenderer.RenderTranslucent(Renderer, FogConstants);
+	}
+
+	RenderSceneText(TargetWorld, SceneView);
+
+	if (Options.bShowSceneDepth && SceneDepthRenderer)
+		SceneDepthRenderer->OnRender(SceneView, DepthTarget, ColorTarget, Options.SceneDepthRange);
+	if (Options.bEnableFXAA && !Options.bShowSceneDepth && FXAARenderer &&
+		FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
+	{
+		// Both viewport types now exchange and bind the same final output target.
+		if (!Targets.SwapSceneColorAndBind(FXAARenderer->GetOutputTarget()))
+			RenderCommand::BindRenderPassNoClear(ColorTarget, DepthTarget, Width, Height);
+	}
+	return true;
+}
+
+bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const FSceneView& SceneView,
+	FSceneRenderer& SceneRenderer, UWorld* TargetWorld, const FSceneRenderOptions& Options)
+{
+	FTexture2D* ColorTarget = Targets.SceneColor.get();
+	FTexture2D* DepthTarget = Targets.Depth.get();
+	if (!TargetWorld || !Renderer || !ColorTarget || !DepthTarget)
+		return false;
+	const uint32 Width = ColorTarget->GetWidth();
+	const uint32 Height = ColorTarget->GetHeight();
+	if (!Width || !Height || !Targets.IsValidFor(Width, Height))
+		return false;
+
+	// GBuffer -> HDR lighting -> skybox and tone mapping.
+	if (Options.bDrawPrimitives)
+	{
+		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height);
+	}
+	else
+		RenderCommand::ClearDepthStencil(DepthTarget);
+
+	RenderCommand::BeginRenderPass(ColorTarget, nullptr, Width, Height);
+	if (SkyboxRenderer)
+		SkyboxRenderer->OnRender(SceneView.ViewProjectionMatrix, SceneView.ViewLocation);
+	if (Options.bDrawPrimitives)
+		SceneRenderer.RenderToneMapForward(Renderer, Targets);
 	RenderCommand::EndRenderPass();
 
 	// Opaque/sky fog, then translucent objects using their own distance to the camera.
@@ -947,8 +1020,8 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 			const FSceneView &SceneView,
 			FSceneRenderer &SceneRenderer,
 			UWorld *TargetWorld,
-			const bool bIsPIE) {
-
+			const bool bIsPIE) 
+{
 	if (!ViewClient || !SettingsPanel) return;
 	FSceneRenderOptions Options;
 	Options.bDrawPrimitives = bIsPIE || SettingsPanel->GetSettings().bDrawPrimitives;
@@ -957,14 +1030,25 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	Options.bShowSceneDepth = !bIsPIE && ViewClient->IsSceneDepth();
 	Options.SceneDepthRange = ViewClient->GetMaxRange();
 	
-	FDeferredViewTargets& Targets = ViewClient->GetViewTargets();
-	if (!RenderSceneFrame(Targets, SceneView, SceneRenderer, TargetWorld, Options))
+	FTexture2D* DepthTarget = nullptr;
+	FViewportSettings ViewportSetting{0, 0, 0, 0, 0.0f, 1.0f};
+	if (auto* Forward = dynamic_cast<FForwardEditorViewportClient*>(ViewClient))
+	{
+		FForwardViewTargets& Targets = Forward->GetViewTargets();
+		if (!RenderSceneFrameForward(Targets, SceneView, SceneRenderer, TargetWorld, Options))
+			return;
+
+		DepthTarget = Targets.Depth.get();
+		ViewportSetting.Width = Targets.SceneColor->GetWidth();
+		ViewportSetting.Height = Targets.SceneColor->GetHeight();
+	}
+	else
+	{
+		// FDeferredEditorViewportClient
 		return;
-	FTexture2D* DepthTarget = Targets.Depth.get();
-	const uint32 Width = Targets.SceneColor->GetWidth();
-	const uint32 Height = Targets.SceneColor->GetHeight();
+	}
+	
 	const int32 ViewIndex = SceneView.ViewIndex;
-	const FViewportSettings ViewportSetting{0, 0, Width, Height, 0.0f, 1.0f};
 
 	// 라인 배처 렌더링
 	if (!bIsPIE &&
@@ -1044,6 +1128,16 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	}
 
 	RenderCommand::EndRenderPass();
+}
+
+void UEditorEngine::RenderGameFrame(FGameViewportClient* GameClient, const FSceneView& SceneView, FSceneRenderer& SceneRenderer, bool bIsSIEMode)
+{
+	if (!GameClient) return;
+
+	if (auto* Forward = dynamic_cast<FForwardGameViewportClient*>(GameClient))
+		RenderGameFrameForward(Forward, SceneView, SceneRenderer, bIsSIEMode);
+	else if (auto* Deferred = dynamic_cast<FDeferredGameViewportClient*>(GameClient))
+		RenderGameFrameDeferred(Deferred, SceneView, SceneRenderer, bIsSIEMode);
 }
 
 // View Texture가 포함된 UI를 Swapchain 백버퍼에 합성한다. Present는

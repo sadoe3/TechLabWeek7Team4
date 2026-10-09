@@ -1,12 +1,8 @@
 #pragma once
 
 #include "Engine/ViewportClient.h"
-#include "Math/Vector.h"
-#include "Math/Rotator.h"
-#include "Math/Matrix.h"
 #include "Render/SceneView.h"
 #include "Render/SceneRenderData.h"
-#include "Render/DeferredViewTargets.h"
 
 class UWorld;
 class UGameInstance;
@@ -19,16 +15,18 @@ struct FWorldContext;
 class FGameViewportClient : public FViewportClient
 {
 public:
-	FGameViewportClient();
+	FGameViewportClient() = default;
 	virtual ~FGameViewportClient() override = default;
 
 	// 월드 및 게임 인스턴스 초기화
-	void Init(FWorldContext& InWorldContext, UEngine* InEngine);
+	void Init(const FWorldContext& InWorldContext, UEngine* InEngine);
 
-	virtual UWorld* GetWorld() const override;
+	virtual UWorld* GetWorld() const override { return World; }
+	void SetWorld(UWorld* InWorld);
 
 	virtual void MouseMove(FViewport* Viewport, int32 X, int32 Y) override;
 	virtual bool InputKey(FViewport* Viewport, int32 Key, bool bDown) override;
+	virtual void LostFocus() override;
 	virtual bool InputAxis(FViewport* Viewport, int32 ControllerId, EGameInputAxis AxisKey, float Delta, float DeltaTime) override;
 	bool ConsumeExitRequest() {
 		const bool bRequested = bExitRequested;
@@ -47,22 +45,18 @@ public:
 
 	// 렌더 타깃 및 크기 관리
 	virtual void Resize(FViewport* Viewport, uint32 NewWidth, uint32 NewHeight) override { Resize(NewWidth, NewHeight); }
-	void Resize(uint32 InWidth, uint32 InHeight);
+	virtual void Resize(uint32 InWidth, uint32 InHeight) = 0;
 	uint32 GetWidth() const { return Width; }
 	uint32 GetHeight() const { return Height; }
-	class FTexture2D* GetColorTarget() const { return ViewTargets.SceneColor.get(); }
-	FTexture2D* SwapSceneColorAndBind(TUniquePtr<FTexture2D>& Output) { return ViewTargets.SwapSceneColorAndBind(Output); }
-	class FTexture2D* GetDepthTarget() const { return ViewTargets.Depth.get(); }
+	virtual FTexture2D* GetColorTarget() const = 0;
+	virtual FTexture2D* SwapSceneColorAndBind(TUniquePtr<FTexture2D>& Output) = 0;
+	virtual FTexture2D* GetDepthTarget() const = 0;
 	FSceneRenderData& GetRenderData() { return RenderData; }
-	FDeferredViewTargets& GetViewTargets() { return ViewTargets; }
-	const FDeferredViewTargets& GetViewTargets() const { return ViewTargets; }
 
 	void SetGameInstance(UGameInstance* InGameInstance) { GameInstance = InGameInstance; }
 	UGameInstance* GetGameInstance() const { return GameInstance; }
 
-	void SetWorld(UWorld* InWorld);
-
-	void SetCameraComponent(UCameraComponent* InCameraComponent);
+	void SetCameraComponent(UCameraComponent* InCameraComponent) { CameraComponent = InCameraComponent; }
 
 	void Reset();
 
@@ -71,9 +65,7 @@ public:
 	void GetKeyInputBySIEMode(int32 Key, bool bDown);
 	void GetAxisInputBySIEMode(EGameInputAxis Key, float Delta);
 	void TickSIEInput(float DeltaTime, float MoveSpeed, float MouseSensitivity);
-	bool IsSIEMode() const { return bSIEMode; }
-
-	virtual void LostFocus() override;
+	virtual bool IsSIEMode() const { return bSIEMode; }
 
 protected:
 	// Optional HUD layer: return true when consumed. Game input is forwarded otherwise.
@@ -81,9 +73,14 @@ protected:
 	virtual bool HandleUIAxis(EGameInputAxis AxisKey, float Delta) { return false; }
 	virtual bool HandleUIMouseMove(int32 X, int32 Y) { return false; }
 
+	virtual void ResetViewTargets() = 0;
+
+	// 렌더 타깃 버퍼 관련 정보
+	uint32 Width = 0;
+	uint32 Height = 0;
+
 private:
 	UCameraComponent* FindPlayerCamera() const;
-
 
 	UWorld* World = nullptr;
 	UGameInstance* GameInstance = nullptr;
@@ -98,10 +95,5 @@ private:
 	bool bExitRequested = false;
 	bool bSIEModeRequested = false;
 
-
-	// 렌더 타깃 버퍼
-	uint32 Width = 0;
-	uint32 Height = 0;
-	FDeferredViewTargets ViewTargets;
 	FSceneRenderData RenderData;
 };

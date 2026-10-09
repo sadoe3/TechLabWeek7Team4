@@ -30,7 +30,7 @@ public:
 	bool Init();
 	void DrawDeferredLighting(const FSceneView& View, const struct FDeferredViewTargets& Targets,
 		const TArray<FPointLightRenderData>& PointLights);
-	void DrawToneMap(const struct FDeferredViewTargets& Targets);
+	void DrawToneMap(FTexture2D* LightingHDR, FTexture2D* Depth);
 
 	// 시점 상수 버퍼 및 렌더링 상태 설정
 	void SetupView(const FSceneView& View);

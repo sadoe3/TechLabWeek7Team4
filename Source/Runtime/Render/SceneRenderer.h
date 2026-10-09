@@ -10,6 +10,7 @@ class FScene;
 class FRenderer;
 class FConstantBuffer;
 struct FDeferredViewTargets;
+struct FForwardViewTargets;
 
 // 씬 렌더링 조율자
 class FSceneRenderer
@@ -32,7 +33,11 @@ public:
 	// 불투명 장면은 GBuffer 패스로 렌더링한다.
 	bool RenderGBuffer(FRenderer* Renderer, const FDeferredViewTargets& Targets, uint32 Width, uint32 Height);
 	void RenderDeferredLighting(FRenderer* Renderer, const FDeferredViewTargets& Targets);
-	void RenderToneMap(FRenderer* Renderer, const FDeferredViewTargets& Targets);
+	void RenderToneMapDeferred(FRenderer* Renderer, const FDeferredViewTargets& Targets);
+
+	// 불투명 Forward 렌더링
+	void RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height);
+	void RenderToneMapForward(FRenderer* Renderer, const FForwardViewTargets& Targets);
 
 	// 반투명 렌더링
 	void RenderTranslucent(FRenderer* Renderer, FConstantBuffer* FogConstants = nullptr);

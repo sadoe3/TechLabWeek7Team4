@@ -168,32 +168,6 @@ FSceneView FEditorViewportClient::CalcSceneView() const {
       FRect(0.0f, 0.0f, static_cast<float>(Width), static_cast<float>(Height)));
 }
 
-// 뷰포트 크기 변경 및 타깃 생성
-void FEditorViewportClient::Resize(const uint32 InWidth,
-                                   const uint32 InHeight) {
-  if (Width == InWidth && Height == InHeight &&
-      ViewTargets.IsValidFor(InWidth, InHeight)) {
-    return;
-  }
-
-  const uint32 OldWidth = Width;
-  const uint32 OldHeight = Height;
-
-  Width = InWidth;
-  Height = InHeight;
-
-  ViewTargets.Resize(Width, Height);
-
-  if (Height > 0) {
-    SetAspectRatio(static_cast<float>(Width) / static_cast<float>(Height));
-  }
-
-  if (!bIsPerspective && OldWidth > 1 && Width > 1) {
-    // 화면 크기 변경 시 직교 배율 유지
-    OrthoWidth *= static_cast<float>(Width) / static_cast<float>(OldWidth);
-  }
-}
-
 // 뷰포트 시점 설정
 void FEditorViewportClient::SetViewportType(const ELevelViewportType InType) {
   ViewportType = InType;
