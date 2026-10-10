@@ -50,7 +50,7 @@ bool SphereOutsidePlane(float3 center, float radius, float4 plane)
 
 
 [numthreads(TILE_SIZE, TILE_SIZE, 1)] 
-void CSMain(uint3 groupId : SV_GroupID, uint localIndex : SV_GroupIndex)  // GroupID = dispatch 레벨에서의 block index, GroupIndex = thread group 레벨에서의 thread index
+void mainCS(uint3 groupId : SV_GroupID, uint localIndex : SV_GroupIndex)  // GroupID = dispatch 레벨에서의 block index, GroupIndex = thread group 레벨에서의 thread index
 {
     uint tileIndex = groupId.y * TileCountX + groupId.x;
 

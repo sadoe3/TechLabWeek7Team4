@@ -104,7 +104,9 @@ class FShaderProgram
 {
 public:
 	FShaderProgram(FVertexShader* InVertexShader, FPixelShader* InPixelShader);
+	explicit FShaderProgram(FComputeShader* InComputeShader);
 
-	FVertexShader* VertexShader;
-	FPixelShader* PixelShader;
+	FVertexShader* VertexShader = nullptr;
+	FPixelShader* PixelShader = nullptr;
+	FComputeShader* ComputeShader = nullptr;
 };

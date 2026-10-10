@@ -31,6 +31,10 @@ FShaderProgram::FShaderProgram(FVertexShader* InVertexShader, FPixelShader* InPi
 	:VertexShader(InVertexShader), PixelShader(InPixelShader)
 {
 }
+FShaderProgram::FShaderProgram(FComputeShader* InComputeShader)
+	: ComputeShader(InComputeShader)
+{
+}
 
 const FConstantBufferBinding* FShaderBindings::FindConstantBuffer(const FString& Name) const
 {

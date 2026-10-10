@@ -103,8 +103,10 @@ void FRenderResourceManager::ScanShaders(const fs::path& ShaderRoot)
 		if (!Entry.is_regular_file()) continue;
 		if (Entry.path().extension() != ".hlsl") continue;
 
-		FString Path = Entry.path().generic_string();
-		LoadOrCompileShader(Path);
+		const FString Path = Entry.path().generic_string();
+		const FString FileName = Entry.path().filename().generic_string();
+		const bool bComputeShader = FileName.rfind("CS_", 0) == 0;
+		LoadOrCompileShader(Path, bComputeShader);
 	}
 }
 
@@ -112,6 +114,7 @@ void FRenderResourceManager::Shutdown()
 {
 	Get().VertexShaderMap.Empty();
 	Get().PixelShaderMap.Empty();
+	Get().ComputeShaderMap.Empty();
 	Get().ShaderProgramMap.Empty();
 }
 
@@ -137,8 +140,37 @@ FShaderProgram* FRenderResourceManager::GetShaderProgram(const FString& InPath, 
 
 
 
-void FRenderResourceManager::LoadOrCompileShader(const FString& Path, const TArray<FShaderMacro>& Macros)
+void FRenderResourceManager::LoadOrCompileShader(const FString& Path, const TArray<FShaderMacro>& Macros, bool bComputeShader)
 { 
+	if (bComputeShader)
+	{
+		FString CSCSOPath;
+		FShaderByteCode CSCode = RenderUtil::GetOrCompile(Path, "mainCS", EShaderType::Compute, CSCSOPath);
+
+		if (!CSCode.IsValid())
+		{
+			HTR_LOG(Error, "[Shader] compile failed: {}", Path);
+			return;
+		}
+
+		TUniquePtr<FComputeShader> Cs = RenderCommand::CreateComputeShader(CSCode);
+
+		if (!Cs || !Cs->IsValid())
+		{
+			HTR_LOG(Error, "[Shader] device create failed: {}", Path);
+			return;
+		}
+
+		FComputeShader* CsRaw = Cs.get();
+
+		ComputeShaderMap[CSCSOPath] = std::move(Cs);
+		ShaderProgramMap[Path] = MakeUnique<FShaderProgram>(CsRaw);
+
+		HTR_LOG(Info, "[Shader] loaded: {}", Path);
+		return;
+	}
+
+
 	FString VSCSOPath;
 	FString PSCSOPath;
 	FShaderByteCode VSCode = RenderUtil::GetOrCompile(Path, "mainVS", EShaderType::Vertex, VSCSOPath, Macros);
@@ -167,5 +199,4 @@ void FRenderResourceManager::LoadOrCompileShader(const FString& Path, const TArr
 	ShaderProgramMap[Path + RenderUtil::MakeMacroKey(Macros)] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);
 
 	HTR_LOG(Info, "[Shader] loaded: {}", Path);
-
 }

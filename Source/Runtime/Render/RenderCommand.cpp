@@ -93,9 +93,18 @@ void RenderCommand::BindPipelineState(const FPipelineState& PipelineState)
 
 void RenderCommand::BindShaderProgram(FShaderProgram* Shader)
 {
-	RenderDevice->GetContext()->VSSetShader(Shader->VertexShader->GetShader(), nullptr, 0);
-	RenderDevice->GetContext()->PSSetShader(Shader->PixelShader->GetShader(), nullptr, 0);
-	RenderDevice->GetContext()->IASetInputLayout(Shader->VertexShader->GetLayout());
+	ID3D11DeviceContext* Context = RenderDevice->GetContext();
+
+	if (Shader->ComputeShader)
+	{
+		Context->CSSetShader(Shader->ComputeShader->GetShader(), nullptr, 0);
+		return;
+	}
+
+
+	Context->VSSetShader(Shader->VertexShader->GetShader(), nullptr, 0);
+	Context->PSSetShader(Shader->PixelShader->GetShader(), nullptr, 0);
+	Context->IASetInputLayout(Shader->VertexShader->GetLayout());
 }
 
 void RenderCommand::BindMesh(UStaticMesh* Mesh, uint32 LODIndex)
