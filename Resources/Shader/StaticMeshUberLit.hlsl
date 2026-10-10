@@ -21,7 +21,7 @@ struct DirectionalLightInfo
 struct PointLightInfo
 {
 	float3 Color;
-	float Range;
+	float AttenuationRadius;
 	float3 Position;
 	float Padding;
 };
@@ -29,11 +29,11 @@ struct PointLightInfo
 struct SpotLightInfo
 {
 	float3 Color;
-	float Range;
+    float AttenuationRadius;
 	float3 Position;
-	float InnerAngle;
+	float InnerConeAngle;
 	float3 Direction;
-	float OuterAngle;
+	float OuterConeAngle;
 };
 
 cbuffer FrameConstants : register(b0)
@@ -85,16 +85,22 @@ static const float3 LightDir = normalize(float3(0.5f, 0.5f, -1.0f));
 static const float3 LightColor = float3(1.0f, 1.0f, 1.0f);
 static const float3 AmbientColor = float3(0.5f, 0.5f, 0.5f);
 
-float3 Diffuse(float3 Kd, float3 N, float3 L, float3 LightColor)
+float3 Diffuse(float3 Kd)
 {
-	float NdotL = saturate(dot(N, L));
-	return Kd * LightColor * NdotL / Pi;
+	return Kd / Pi;
 }
 
-float3 Specular(float3 Ks, float3 R, float3 V, float3 LightColor, float Shininess)
+float3 SpecularPhong(float3 Ks, float3 R, float3 V, float Shininess)
 {
 	float RdotV = saturate(dot(R, V));
-	return Ks * LightColor * pow(RdotV, Shininess) * (Shininess + 2.0f) / (2.0f * Pi);
+	return Ks * pow(RdotV, Shininess) * (Shininess + 2.0f) / (2.0f * Pi);
+}
+
+float3 SpecularBlinnPhong(float3 Ks, float3 N, float3 L, float3 V, float Shininess)
+{
+    float3 H = normalize(L + V);
+    float NdotH = saturate(dot(N, H));
+    return Ks * pow(NdotH, Shininess) * (Shininess + 8.0f) / (8.0f * Pi);
 }
 
 PS_INPUT mainVS(VS_INPUT Input)
@@ -119,17 +125,18 @@ float4 mainPS(PS_INPUT Input) : SV_TARGET
 	float3 ReflectDir = reflect(LightDir, NormalDir);
 	float3 ViewDir = normalize(CameraPosition - Input.WorldPosition);
 	
+    float NdotL = saturate(dot(NormalDir, -LightDir));
+	
 	float3 FinalColor = float3(0.0f, 0.0f, 0.0f);
 	
 	// Ambient Light
 	FinalColor += Albedo.rgb * AmbientColor;
 	
 	// Directional Light
-	FinalColor += Diffuse(Albedo.rgb, NormalDir, -LightDir, LightColor);
-	if (dot(NormalDir, -LightDir) > 0.0f)
-	{
-		FinalColor += Specular(float3(1.0f, 1.0f, 1.0f), ReflectDir, ViewDir, LightColor, 10.0f);
-	}
+	FinalColor += NdotL * LightColor * Diffuse(Albedo.rgb);
+	
+    // FinalColor += NdotL * LightColor * SpecularPhong(float3(1.0f, 1.0f, 1.0f), ReflectDir, ViewDir, 10.0f);
+    FinalColor += NdotL * LightColor * SpecularBlinnPhong(float3(1.0f, 1.0f, 1.0f), NormalDir, -LightDir, ViewDir, 40.0f);
 	
 	return float4(FinalColor.rgb, Albedo.a);
 }
