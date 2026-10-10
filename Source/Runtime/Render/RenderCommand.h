@@ -8,6 +8,7 @@ class UTexture2D;
 class FShaderProgram;
 class FVertexShader;
 class FPixelShader;
+class FComputeShader;
 struct FDeferredViewTargets;
 
 enum class EShaderBindFlagBits : uint32
@@ -42,6 +43,7 @@ public:
 
 	static TUniquePtr<FVertexShader> CreateVertexShader(const FShaderByteCode& ByteCode);
 	static TUniquePtr<FPixelShader> CreatePixelShader(const FShaderByteCode& ByteCode);
+	static TUniquePtr<FComputeShader> CreateComputeShader(const FShaderByteCode& ByteCode);
 
 	static void BindPipelineState(const FPipelineState& PipelineState);
 

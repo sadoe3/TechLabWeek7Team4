@@ -7,6 +7,7 @@ class FVertexBuffer;
 class FShader;
 class FVertexShader;
 class FPixelShader;
+class FComputeShader;
 class FShaderProgram;
 struct FShaderByteCode;
 struct FImageData;
@@ -43,6 +44,7 @@ public:
 
 	TUniquePtr<FVertexShader> CreateVertexShader(const FShaderByteCode& ByteCode);
 	TUniquePtr<FPixelShader> CreatePixelShader(const FShaderByteCode& ByteCode);
+	TUniquePtr<FComputeShader> CreateComputeShader(const FShaderByteCode& ByteCode);
 
 	TUniquePtr<FShaderProgram> CreateShader(const wchar_t* FileName, D3D11_INPUT_ELEMENT_DESC* InLayoutDesc, size_t InLayoutSize);
 

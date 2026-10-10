@@ -64,7 +64,7 @@ public:
 	ID3D11VertexShader* GetShader() const { return VertexShader.Get(); }
 	ID3D11InputLayout* GetLayout() const { return InputLayout.Get(); }
 
-	virtual bool IsValid() const { return VertexShader != nullptr; }
+	virtual bool IsValid() const override { return VertexShader != nullptr; }
 
 private:
 	void InputLayoutReflection(ID3D11Device* Device, const FShaderByteCode& ByteCode);
@@ -81,9 +81,23 @@ public:
 
 	ID3D11PixelShader* GetShader() const { return PixelShader.Get(); }
 
-	virtual bool IsValid() const { return PixelShader != nullptr; }
+	virtual bool IsValid() const override { return PixelShader != nullptr; }
 private:
 	ComPtr<ID3D11PixelShader> PixelShader = nullptr;
+};
+
+class FComputeShader : public FShader
+{
+public:
+	FComputeShader(ID3D11Device* Device, const FShaderByteCode& ByteCode);
+	virtual ~FComputeShader() = default;
+
+	ID3D11ComputeShader* GetShader() const { return ComputeShader.Get(); }
+
+	virtual bool IsValid() const override { return ComputeShader != nullptr; }
+
+private:
+	ComPtr<ID3D11ComputeShader> ComputeShader = nullptr;
 };
 
 class FShaderProgram

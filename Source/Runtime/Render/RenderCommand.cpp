@@ -70,6 +70,12 @@ TUniquePtr<FVertexShader> RenderCommand::CreateVertexShader(const FShaderByteCod
 	return RenderDevice->CreateVertexShader(ByteCode);
 }
 
+TUniquePtr<FComputeShader> RenderCommand::CreateComputeShader(const FShaderByteCode& ByteCode)
+{
+	assert(RenderDevice);
+	return RenderDevice->CreateComputeShader(ByteCode);
+}
+
 TUniquePtr<FPixelShader> RenderCommand::CreatePixelShader(const FShaderByteCode& ByteCode)
 {
 	assert(RenderDevice);

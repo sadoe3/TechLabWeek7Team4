@@ -171,6 +171,12 @@ TUniquePtr<FPixelShader> FRenderDevice::CreatePixelShader(const FShaderByteCode&
 	return PS;
 }
 
+TUniquePtr<FComputeShader> FRenderDevice::CreateComputeShader(const FShaderByteCode& ByteCode)
+{
+	TUniquePtr<FComputeShader> CS = MakeUnique<FComputeShader>(Device.Get(), ByteCode);
+	return CS;
+}
+
 //TUniquePtr<FShaderProgram> FRenderDevice::CreateShader(const wchar_t* FileName, D3D11_INPUT_ELEMENT_DESC* InLayoutDesc, size_t InLayoutSize)
 //{
 	//TUniquePtr<FShaderProgram> Shader = MakeUnique<FShaderProgram>();
