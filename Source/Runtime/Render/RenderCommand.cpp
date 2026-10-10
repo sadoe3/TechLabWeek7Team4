@@ -167,7 +167,8 @@ void RenderCommand::BindConstantBuffer(uint32 Slot, FConstantBuffer* ConstantBuf
 		RenderDevice->GetContext()->VSSetConstantBuffers(Slot, 1, &Buffer);
 	if (HasFlag(FlagBits, EShaderBindFlagBits::Pixel))
 		RenderDevice->GetContext()->PSSetConstantBuffers(Slot, 1, &Buffer);
-
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Compute))
+		RenderDevice->GetContext()->CSSetConstantBuffers(Slot, 1, &Buffer);
 }
 
 bool RenderCommand::SupportsConstantBufferOffsets()
@@ -200,16 +201,7 @@ void RenderCommand::Unmap(FBuffer* InBuffer)
 
 void RenderCommand::BindShaderResource(uint32 Slot, FTexture2D* Texture2D, EShaderBindFlagBits FlagBits)
 {
-	ID3D11ShaderResourceView* SRV = Texture2D ? Texture2D->GetSRV() : nullptr;
-	if (HasFlag(FlagBits, EShaderBindFlagBits::Vertex))
-	{
-		RenderDevice->GetContext()->VSSetShaderResources(Slot, 1, &SRV);
-	}
-
-	if (HasFlag(FlagBits, EShaderBindFlagBits::Pixel))
-	{
-		RenderDevice->GetContext()->PSSetShaderResources(Slot, 1, &SRV);
-	}
+	BindShaderResource(Slot, Texture2D ? Texture2D->GetSRV() : nullptr, FlagBits);
 }
 
 void RenderCommand::BindShaderResource(uint32 Slot, UTexture2D* Texture2D, EShaderBindFlagBits FlagBits)
@@ -217,6 +209,17 @@ void RenderCommand::BindShaderResource(uint32 Slot, UTexture2D* Texture2D, EShad
 	BindShaderResource(Slot, Texture2D ? Texture2D->GetResource() : nullptr, FlagBits);
 }
 
+void RenderCommand::BindShaderResource(uint32 Slot, ID3D11ShaderResourceView* SRV, EShaderBindFlagBits FlagBits)
+{
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Vertex))
+		RenderDevice->GetContext()->VSSetShaderResources(Slot, 1, &SRV);
+
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Pixel))
+		RenderDevice->GetContext()->PSSetShaderResources(Slot, 1, &SRV);
+
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Compute))
+		RenderDevice->GetContext()->CSSetShaderResources(Slot, 1, &SRV);
+}
 
 void RenderCommand::UnbindShaderResources(uint32 FirstSlot, uint32 Count, EShaderBindFlagBits FlagBits)
 {
@@ -228,6 +231,8 @@ void RenderCommand::UnbindShaderResources(uint32 FirstSlot, uint32 Count, EShade
         RenderDevice->GetContext()->VSSetShaderResources(FirstSlot, Count, NullResources);
     if (HasFlag(FlagBits, EShaderBindFlagBits::Pixel))
         RenderDevice->GetContext()->PSSetShaderResources(FirstSlot, Count, NullResources);
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Compute))
+		RenderDevice->GetContext()->CSSetShaderResources(FirstSlot, Count, NullResources);
 }
 
 bool RenderCommand::BeginGBufferPass(const FDeferredViewTargets& Targets, uint32 Width, uint32 Height)

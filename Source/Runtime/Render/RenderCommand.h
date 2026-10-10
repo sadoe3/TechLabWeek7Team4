@@ -77,6 +77,7 @@ public:
 	static void Unmap(FBuffer* InBuffer);
 	static void BindShaderResource(uint32 Slot, FTexture2D* Texture2D, EShaderBindFlagBits FlagBits);
 	static void BindShaderResource(uint32 Slot, UTexture2D* Texture2D, EShaderBindFlagBits FlagBits);
+	static void BindShaderResource(uint32 Slot, ID3D11ShaderResourceView* SRV, EShaderBindFlagBits FlagBits);
 	static void UnbindShaderResources(uint32 FirstSlot, uint32 Count, EShaderBindFlagBits FlagBits);
 
 	static void BeginRenderPass(FTexture2D* ColorTarget, FTexture2D* DepthTarget, uint32 Width, uint32 Height);
