@@ -46,6 +46,12 @@ TUniquePtr<FConstantBuffer> RenderCommand::CreateConstantBuffer(uint32 BufferSiz
 	return RenderDevice->CreateConstantBuffer(BufferSize);
 }
 
+TUniquePtr<FStructuredBuffer> RenderCommand::CreateStructuredBuffer(uint32 ElementCount, uint32 ElementStride, bool bAllowUAV, const void* InitialData)
+{
+	assert(RenderDevice);
+	return RenderDevice->CreateStructuredBuffer(ElementCount, ElementStride, bAllowUAV, InitialData);
+}
+
 TUniquePtr<FTexture2D> RenderCommand::CreateTexture2D(const D3D11_TEXTURE2D_DESC& Desc, const FImageData& Image)
 {
 	assert(RenderDevice);
