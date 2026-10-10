@@ -6,7 +6,7 @@
 #include "Engine/World.h"
 
 
-
+class FGameViewportClient;
 class FEngineLoop;
 
 // 엔진 모드별 실행 설정. UE에서는 ini가 맡는 부분이다.
@@ -26,7 +26,6 @@ struct FEngineConfig
 
 
 class UGameInstance;
-class FGameViewportClient;
 
 // 월드 컨텍스트 정보
 struct FWorldContext

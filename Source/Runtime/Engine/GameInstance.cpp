@@ -1,8 +1,9 @@
 #include "EnginePCH.h"
 #include "Engine/GameInstance.h"
+
+#include "ForwardGameViewportClient.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
-#include "Engine/GameViewportClient.h"
 #include "ObjectSystem/ObjectFactory.h"
 
 void UGameInstance::Init()
@@ -93,7 +94,7 @@ bool UGameInstance::StartPlayInEditorGameInstance()
 	// 게임 뷰포트 클라이언트 생성 및 초기화
 	if (WorldContext)
 	{
-		WorldContext->GameViewport = MakeShared<FGameViewportClient>();
+		WorldContext->GameViewport = MakeShared<FForwardGameViewportClient>();
 		WorldContext->GameViewport->Init(*WorldContext, GetEngine());
 	}
 

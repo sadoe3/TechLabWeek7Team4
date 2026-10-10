@@ -35,11 +35,14 @@
 //Temp
 #include "Text/Font.h"
 #include "Text/TextRenderer.h"
-#include <Editor\Viewports\EditorViewportClient.h>
-#include <Container\Array.h>
+#include "Editor/Viewports/EditorViewportClient.h"
+#include "Container/Array.h"
 
+class FForwardEditorViewportClient;
+struct FForwardViewTargets;
 class FSceneRenderer;
-class FGameViewportClient;
+class FDeferredGameViewportClient;
+class FForwardGameViewportClient;
 
 class UEditorEngine : public UEngine
 {
@@ -58,7 +61,6 @@ public:
 	// 게임 뷰포트 화면을 렌더링한다.
 	void RenderGameFrame(FGameViewportClient* GameClient, const FSceneView& SceneView, FSceneRenderer& SceneRenderer, bool bIsSIEMode = false);
 
-
 	// 네 View 결과와 ImGui를 메인 Swapchain 백버퍼에 합성한다. Present는 FEngineLoop가 한다.
 	void PresentFrame();
 	void DeleteActor(AActor* Actor);
@@ -74,6 +76,9 @@ private:
 	void TickWorld(float DeltaTime);
 	// 한 번 캡처한 월드 결과를 재사용해 현재 레이아웃의 각 View를 렌더한다.
 	void RenderViewports();
+	void RenderGameFrameDeferred(FDeferredGameViewportClient* GameClient, const FSceneView& SceneView, FSceneRenderer& SceneRenderer, bool bIsSIEMode = false);
+	void RenderGameFrameForward(FForwardGameViewportClient* GameClient, const FSceneView& SceneView, FSceneRenderer& SceneRenderer, bool bIsSIEMode = false);
+
 	struct FSceneRenderOptions
 	{
 		bool bDrawPrimitives = true;
@@ -83,7 +88,9 @@ private:
 		float SceneDepthRange = 1.0f;
 	};
 	// Common scene passes. Leaves SceneColor/Depth bound for caller overlays and EndRenderPass.
-	bool RenderSceneFrame(FDeferredViewTargets& Targets, const FSceneView& SceneView,
+	bool RenderSceneFrameDeferred(FDeferredViewTargets& Targets, const FSceneView& SceneView,
+		FSceneRenderer& SceneRenderer, UWorld* TargetWorld, const FSceneRenderOptions& Options);
+	bool RenderSceneFrameForward(FForwardViewTargets& Targets, const FSceneView& SceneView,
 		FSceneRenderer& SceneRenderer, UWorld* TargetWorld, const FSceneRenderOptions& Options);
 	void RenderSceneText(UWorld* TargetWorld, const FSceneView& SceneView);
 	bool RenderHeightFog(UWorld* TargetWorld, const FSceneView& SceneView, FTexture2D* DepthTarget, FTexture2D* ColorTarget);

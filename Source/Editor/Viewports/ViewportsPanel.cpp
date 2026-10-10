@@ -1,9 +1,10 @@
 #include "EnginePCH.h"
 #include "Editor/Viewports/ViewportsPanel.h"
-#include "Engine/GameViewportClient.h"
 
 #include "Core/StatOverlay.h"
 #include "Core/Stats/LightweightStats.h"
+#include "Engine/GameViewportClient.h"
+#include "ForwardEditorViewportClient.h"
 #include "Render/RenderCommand.h"
 
 #include <algorithm>
@@ -30,7 +31,7 @@ constexpr ImU32 ValueColor = IM_COL32(235, 235, 235, 255);
 // 네 View의 렌더 타깃을 최소 크기로 초기화한다.
 bool FViewportsPanel::Init() {
 	for (int32 i = 0; i < 4; ++i) {
-		ViewportClients[i] = MakeUnique<FEditorViewportClient>();
+		ViewportClients[i] = MakeUnique<FForwardEditorViewportClient>();
 		ViewportClients[i]->SetViewIndex(i);
 		ViewportClients[i]->Resize(1, 1);
 	}

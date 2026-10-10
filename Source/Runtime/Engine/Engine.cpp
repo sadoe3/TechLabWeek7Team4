@@ -6,7 +6,7 @@
 #include "Core/EngineLog.h"
 #include "ObjectSystem/ObjectFactory.h"
 #include "Engine/GameInstance.h"
-#include "Engine/GameViewportClient.h"
+#include "Engine/DeferredGameViewportClient.h"
 #include "Engine/Level.h"
 #include "Camera/CameraActor.h"
 
