@@ -37,6 +37,15 @@ namespace
 	constexpr uint32 PerObjectSlotConstants = 16;
 	static_assert(sizeof(FPerObjectConstants) <= ObjectSlotBytes);
 
+	struct FFrameConstants
+	{
+		FMatrix VP;
+		FVector CameraPosition;
+		float Padding;
+		// TODO: 라이트 정보
+	};
+	static_assert(sizeof(FFrameConstants) % 16 == 0);
+
 	constexpr uint32 MinPerObjectSlots = 1024;
 
 	const FMatrix& GetPacketWorld(const FRenderPacket& Packet)
@@ -58,7 +67,7 @@ bool FRenderer::Init()
 {
 	bUsePerObjectSlots = RenderCommand::SupportsConstantBufferOffsets();
 	PerObjectCB = RenderCommand::CreateConstantBuffer(sizeof(FPerObjectConstants));
-	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FMatrix));
+	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FFrameConstants));
 	DeferredLightCB = RenderCommand::CreateConstantBuffer(sizeof(FDeferredLightConstants));
 
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
@@ -91,7 +100,13 @@ void FRenderer::EnsurePerObjectSlotCapacity(uint32 SlotCount)
 void FRenderer::SetupView(const FSceneView& View)
 {
 	bCurrentWireframe = View.bIsWireframe;
-	RenderCommand::UpdateBufferData(ViewCB.get(), &View.ViewProjectionMatrix);
+	FFrameConstants Constants{
+		.VP = View.ViewProjectionMatrix,
+		.CameraPosition = View.ViewLocation,
+		.Padding = 0.0f,
+		// TODO: 라이트 정보
+	};
+	RenderCommand::UpdateBufferData(ViewCB.get(), &Constants);
 }
 
 // 전체 렌더 큐 렌더링
@@ -186,7 +201,7 @@ void FRenderer::DrawStaticGroups(bool bGBufferPass)
 		[](const FStaticDrawGroup* A, const FStaticDrawGroup* B) { return MakeGroupKey(*A) < MakeGroupKey(*B); });
 
 	SCOPE_CYCLE_COUNTER(STAT_DrawRenderPackets);
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 	UMaterial* BoundMaterial = nullptr;
 	for (const FStaticDrawGroup* Group : StaticGroups)
@@ -227,7 +242,7 @@ void FRenderer::DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 En
 	UMaterial* LastMaterial = nullptr;
 	uint8 LastLODIndex = 0;
 
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 	for (uint32 k = Begin; k < End; ++k)
 	{
@@ -323,7 +338,7 @@ FOcclusionMeasureResult FRenderer::MeasureOpaqueOcclusion(const FMatrix& ViewPro
 		OcclusionQueries.Add(std::move(Query));
 	}
 
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 	if (!bUsePerObjectSlots)
 		RenderCommand::BindConstantBuffer(2, PerObjectCB.get(), EShaderBindFlagBits::Vertex);
 
