@@ -73,14 +73,16 @@ struct PS_INPUT
 Texture2D Texture : register(t0);
 SamplerState Sampler : register(s0);
 
+static const float Pi = 3.14159265359f;
+
 static const float3 LightDir = normalize(float3(0.5f, 0.5f, -1.0f));
-static const float3 LightColor = float3(0.5f, 0.5f, 0.5f);
+static const float3 LightColor = float3(1.0f, 1.0f, 1.0f);
 static const float3 AmbientColor = float3(0.5f, 0.5f, 0.5f);
 
 float3 Diffuse(float3 Albedo, float3 N, float3 L, float3 LightColor)
 {
     float NdotL = saturate(dot(N, L));
-    return Albedo * LightColor * NdotL;
+    return Albedo * LightColor * NdotL / Pi;
 }
 
 PS_INPUT mainVS(VS_INPUT Input)

@@ -61,7 +61,7 @@ struct FForwardViewTargets
 		Desc.Usage = D3D11_USAGE_DEFAULT;
 		Desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 
-		Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 		SceneColor = RenderCommand::CreateTexture2D(Desc);
 
 		Desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
