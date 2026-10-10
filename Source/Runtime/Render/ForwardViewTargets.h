@@ -3,12 +3,14 @@
 #include "Core/Types.h"
 #include "Render/RenderCommand.h"
 #include "Render/Texture2D.h"
+#include "Render/LightCulling/TileLightCullingResources.h"
 
 struct FForwardViewTargets
 {
 	TUniquePtr<FTexture2D> SceneColor;
 	TUniquePtr<FTexture2D> LightingHDR;
 	TUniquePtr<FTexture2D> Depth;
+	FTileLightCullingResources TileLightResources;
 
 	// FXAA처리가 된 SceneColor로 swap하기 위해 사용된다.
 	FTexture2D* SwapSceneColorAndBind(TUniquePtr<FTexture2D>& Output)
@@ -25,6 +27,8 @@ struct FForwardViewTargets
 
 	void Reset()
 	{
+		TileLightResources.Reset();
+
 		SceneColor.reset();
 		LightingHDR.reset();
 		Depth.reset();

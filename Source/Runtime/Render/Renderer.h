@@ -7,6 +7,7 @@
 #include "SceneView.h"
 #include "Occlusion/GPUOcclusion.h"
 #include "Engine/LightSceneProxy.h"
+#include "LightCulling/TileLightCulling.h"
 
 struct FFrameLightData;
 
@@ -59,6 +60,8 @@ public:
 	uint8* BeginObjectConstants(uint32 MaxSlots);
 	void EndObjectConstants();
 
+	FTileLightCulling& GetTileLightCulling() { return TileLightCulling; }
+
 private:
 	TUniquePtr<FConstantBuffer> PerObjectCB;
 	TUniquePtr<FConstantBuffer> ViewCB;
@@ -77,6 +80,8 @@ private:
 	ComPtr<ID3D11DepthStencilState> DepthLessEqualReadOnly;
 
 	FGPUOcclusion GPUOcclusion;
+
+	FTileLightCulling TileLightCulling;
 
 	void DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 End, const FMatrix& ViewProjection, bool bGBufferPass = false);
 

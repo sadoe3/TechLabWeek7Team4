@@ -34,16 +34,17 @@ class FTileLightCulling
 {
 public:
     bool Init();
-    void Execute(FTileLightCullingResources& Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix& Projection, const FCullingLight* Lights, const uint32 LightCount, const uint32 MaxLightsPerTile);
-
+    void Execute(FTileLightCullingResources& Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix& Projection, const FCullingLight* Lights, const uint32 LightCount);
+    void DebugReadbackCounts(const FTileLightCullingResources& Resources);
 private:
     void UploadInputs(FTileLightCullingResources& Resources, const FCullingLight* Lights, const FTileCullingConstants& Constants);
-
 
     FShaderProgram* ComputeShader = nullptr;
 
     // 타일 컬링 상수를 업로드할 버퍼
     TUniquePtr<FConstantBuffer> ConstantsBuffer;
+
+    const uint32 MaxLightsPerTile = 64;
 };
 
 
