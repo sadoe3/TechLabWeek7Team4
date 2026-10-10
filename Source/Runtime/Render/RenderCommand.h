@@ -35,6 +35,7 @@ public:
 	static TUniquePtr<FIndexBuffer> CreateStaticIndexBuffer(const uint32* InIndices, uint32 MaxIndexCount);
 	static TUniquePtr<FIndexBuffer> CreateDynamicIndexBuffer(uint32 MaxIndexCount);
 
+	static TUniquePtr<FBuffer> CreateBuffer(const D3D11_BUFFER_DESC& Desc, const void* InitialData = nullptr);
 	static TUniquePtr<FConstantBuffer> CreateConstantBuffer(uint32 BufferSize);
 	static TUniquePtr<FStructuredBuffer> CreateStructuredBuffer(uint32 ElementCount, uint32 ElementStride, D3D11_USAGE Usage, bool bAllowUAV, const void* InitialData = nullptr);
 

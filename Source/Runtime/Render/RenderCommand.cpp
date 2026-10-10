@@ -40,6 +40,11 @@ TUniquePtr<FIndexBuffer> RenderCommand::CreateDynamicIndexBuffer(uint32 MaxIndex
 	return RenderDevice->CreateDynamicIndexBuffer(MaxIndexCount);
 }
 
+TUniquePtr<FBuffer> RenderCommand::CreateBuffer(const D3D11_BUFFER_DESC& Desc, const void* InitialData)
+{
+	return RenderDevice->CreateBuffer(Desc, InitialData);
+}
+
 TUniquePtr<FConstantBuffer> RenderCommand::CreateConstantBuffer(uint32 BufferSize)
 {
 	assert(RenderDevice);

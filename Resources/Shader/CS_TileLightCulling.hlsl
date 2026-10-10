@@ -24,10 +24,10 @@ cbuffer TileCullingConstants : register(b0)
 };
 
 // 실제 통과 개수. 용량을 초과한 개수도 그대로 기록한다.
-RWStructuredBuffer<uint> TileLightCount : register(u0);
+RWBuffer<uint> TileLightCount : register(u0);
 
 // 타일마다 MaxLightsPerTile개의 라이트 인덱스를 저장한다.
-RWStructuredBuffer<uint> TileLightIndices : register(u1);
+RWBuffer<uint> TileLightIndices : register(u1);
 
 // 스레드 그룹이 공유하는 데이터
 groupshared uint SharedLightCount; // 이번 타일에 들어갈 라이트 수

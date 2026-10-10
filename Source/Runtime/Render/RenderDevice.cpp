@@ -125,6 +125,11 @@ TUniquePtr<FIndexBuffer> FRenderDevice::CreateDynamicIndexBuffer(uint32 MaxIndex
 	return Buffer;
 }
 
+TUniquePtr<FBuffer> FRenderDevice::CreateBuffer(const D3D11_BUFFER_DESC& Desc, const void* InitialData)
+{
+	return MakeUnique<FBuffer>(Device.Get(), Desc, InitialData);
+}
+
 TUniquePtr<FConstantBuffer> FRenderDevice::CreateConstantBuffer(uint32 BufferSize)
 {
 	D3D11_BUFFER_DESC Desc = {};

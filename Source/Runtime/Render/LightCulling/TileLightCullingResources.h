@@ -14,8 +14,8 @@ struct FTileLightCullingResources
     TUniquePtr<FStructuredBuffer> LightSpheres;
 
     // 컬링 출력: 각 타일에 영향을 주는 라이트 개수와 라이트 인덱스 목록
-    TUniquePtr<FStructuredBuffer> TileLightCount;
-    TUniquePtr<FStructuredBuffer> TileLightIndices;
+    TUniquePtr<FBuffer> TileLightCount;
+    TUniquePtr<FBuffer> TileLightIndices;
 
 
     // culling 관련 GPU정보를 여기서 소유함

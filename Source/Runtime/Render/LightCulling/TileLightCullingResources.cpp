@@ -61,7 +61,7 @@ bool FTileLightCullingResources::EnsureCapacity(uint32 InTileCountX, uint32 InTi
         return false;
     }
 
-    // 실제 라이트가 없어도 바인딩할 입력 버퍼는 최소 1칸 확보합니다.
+    // 실제 라이트가 없어도 바인딩할 입력 버퍼는 최소 1칸 확보
     const uint32 RequiredCapacity = RequiredLightCount > 0 ? RequiredLightCount : 1;
     constexpr uint64 MaxBufferBytes = (std::numeric_limits<uint32>::max)();
     const uint64 MaxUintElements = MaxBufferBytes / sizeof(uint32);
@@ -90,40 +90,58 @@ bool FTileLightCullingResources::EnsureCapacity(uint32 InTileCountX, uint32 InTi
 
     ID3D11Device* Device = RenderCommand::GetDevice();
 
-    // 이 자원 묶음 내부에서만 사용하는 버퍼·뷰 생성 절차
-    const auto CreateResource = [Device](uint32 ElementCount, uint32 ElementStride, D3D11_USAGE Usage, TUniquePtr<FStructuredBuffer>& OutBuffer, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& OutSRV, Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>* OutUAV) -> bool
+    // 입력은 사용자 정의 라이트 구조체 배열
+    LightSpheres = RenderCommand::CreateStructuredBuffer(RequiredCapacity, sizeof(FCullingLight), D3D11_USAGE_DYNAMIC, false);
+    if (!LightSpheres || !LightSpheres->GetBuffer())
+    {
+        Reset();
+        return false;
+    }
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC LightSRVDesc{};
+    LightSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+    LightSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+    LightSRVDesc.Buffer.NumElements = RequiredCapacity;
+    if (FAILED(Device->CreateShaderResourceView(LightSpheres->GetBuffer(), &LightSRVDesc, LightSpheresSRV.GetAddressOf())))
+    {
+        Reset();
+        return false;
+    }
+
+    // 두 출력은 R32_UINT 뷰로 해석하는 uint 배열
+    const auto CreateOutputResource = [Device](uint32 ElementCount, TUniquePtr<FBuffer>& OutBuffer, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& OutSRV, Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& OutUAV) -> bool
         {
-            OutBuffer = RenderCommand::CreateStructuredBuffer(ElementCount, ElementStride, Usage, OutUAV != nullptr);
+            D3D11_BUFFER_DESC Desc{};
+            Desc.ByteWidth = ElementCount * sizeof(uint32);
+            Desc.Usage = D3D11_USAGE_DEFAULT;
+            Desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+            OutBuffer = RenderCommand::CreateBuffer(Desc);
 
             if (!OutBuffer || !OutBuffer->GetBuffer())
                 return false;
 
             D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc{};
-            SRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+            SRVDesc.Format = DXGI_FORMAT_R32_UINT;
             SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
             SRVDesc.Buffer.NumElements = ElementCount;
 
             if (FAILED(Device->CreateShaderResourceView(OutBuffer->GetBuffer(), &SRVDesc, OutSRV.GetAddressOf())))
                 return false;
 
-            if (OutUAV)
-            {
-                D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc{};
-                UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-                UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-                UAVDesc.Buffer.NumElements = ElementCount;
+            D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc{};
+            UAVDesc.Format = DXGI_FORMAT_R32_UINT;
+            UAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+            UAVDesc.Buffer.NumElements = ElementCount;
 
-                if (FAILED(Device->CreateUnorderedAccessView(OutBuffer->GetBuffer(), &UAVDesc, OutUAV->GetAddressOf())))
-                    return false;
-            }
+            if (FAILED(Device->CreateUnorderedAccessView(OutBuffer->GetBuffer(), &UAVDesc, OutUAV.GetAddressOf())))
+                return false;
 
             return true;
         };
 
     const bool bCreated =
-        CreateResource(RequiredCapacity, sizeof(FCullingLight), D3D11_USAGE_DYNAMIC, LightSpheres, LightSpheresSRV, nullptr) &&
-        CreateResource(static_cast<uint32>(NumTiles), sizeof(uint32), D3D11_USAGE_DEFAULT, TileLightCount, TileLightCountSRV, &TileLightCountUAV) &&
-        CreateResource(static_cast<uint32>(NumIndices), sizeof(uint32), D3D11_USAGE_DEFAULT, TileLightIndices, TileLightIndicesSRV, &TileLightIndicesUAV);
+        CreateOutputResource(static_cast<uint32>(NumTiles), TileLightCount, TileLightCountSRV, TileLightCountUAV) &&
+        CreateOutputResource(static_cast<uint32>(NumIndices), TileLightIndices, TileLightIndicesSRV, TileLightIndicesUAV);
 
     if (!bCreated)
     {
