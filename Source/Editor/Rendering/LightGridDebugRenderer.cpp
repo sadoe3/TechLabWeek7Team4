@@ -72,7 +72,7 @@ bool FLightGridDebugRenderer::Init(UFont* InFont)
 
 bool FLightGridDebugRenderer::OnRender(const FTileLightCullingResources& Resources, FTexture2D* ColorTarget, FTexture2D* DepthTarget)
 {
-    if (!bEnabled || !ColorTarget || !Resources.IsValid())
+    if (!ColorTarget || !Resources.IsValid())
     {
         return false;
     }

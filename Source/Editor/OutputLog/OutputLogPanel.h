@@ -1,6 +1,7 @@
 #pragma once
 
 #include <format>
+#include <functional>
 #include "Editor/EditorUI/EditorPanel.h"
 #include "Core/EngineLog.h"
 
@@ -29,10 +30,12 @@ public:
 	//}
 
 	void ExecCommand(const FString& command_line);
+	void SetLightGridDebugCallback(std::function<bool(bool)> InCallback) { LightGridDebugCallback = std::move(InCallback); }
 
 	int TextEditCallback(ImGuiInputTextCallbackData* data);
 
 private:
+	std::function<bool(bool)> LightGridDebugCallback;
 	char                  InputBuf[256];
 	TArray<FLogData>       Items;
 	TArray<FString>		  Commands;

@@ -161,10 +161,17 @@ bool UEditorEngine::Init() {
 	FireBallRenderer->Init(Renderer);
 
 	SettingsPanel = EditorUI->AddEditorPanel<FSettingsPanel>();
+	OutputLogPanel->SetLightGridDebugCallback([this](bool bEnabled)
+	{
+		SettingsPanel->GetMutableSettings().bLightGridDebug = bEnabled;
+		return true;
+	});
 
 	Outline = MakeUnique<FOutline>();
 
 	SystemFont = UAssetManager::GetAssetByPath<UFont>("Assets/Fonts/Pretendard.json");
+	LightGridDebugRenderer = MakeUnique<FLightGridDebugRenderer>();
+	LightGridDebugRenderer->Init(SystemFont);
 
 	TextRenderer = MakeUnique<FTextRenderer>();
 	TextRenderer->Init();
@@ -709,6 +716,7 @@ void UEditorEngine::RenderGameFrameForward(FForwardGameViewportClient* GameClien
 
 	FSceneRenderOptions Options;
 	Options.bEnableFXAA = SettingsPanel && SettingsPanel->GetSettings().bEnableFXAA;
+	Options.bLightGridDebug = SettingsPanel && SettingsPanel->GetSettings().bLightGridDebug;
 	// FDeferredViewTargets& Targets = GameClient->GetDeferredViewTargets();
 	FForwardViewTargets& Targets = GameClient->GetViewTargets();
 	if (!RenderSceneFrameForward(Targets, SceneView, SceneRenderer, GameClient->GetWorld(), Options))
@@ -807,23 +815,20 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	if (!Width || !Height || !Targets.IsValidFor(Width, Height))
 		return false;
 
-	// GBuffer -> HDR lighting -> skybox and tone mapping.
+	// todo: 실제 라이트 인터페이스가 합쳐지면 테스트 입력을 교체한다.
+	const FCullingLight TestLights[] =
+	{
+		{ FVector(5.0f, 0.0f, 0.0f), 1.0f },
+		{ FVector(5.0f, 2.0f, 0.0f), 1.0f }
+	};
+	constexpr uint32 TestLightCount = static_cast<uint32>(sizeof(TestLights) / sizeof(TestLights[0]));
+
+	// Primitive 표시와 독립적으로 컬링하여 디버그 화면도 이번 프레임의 목록을 읽는다.
+	// 깊이 버퍼 없이 타일 옆면과 카메라 near/far 평면을 사용한다.
+	Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, SceneView.ProjectionMatrix, TestLights, TestLightCount);
+
 	if (Options.bDrawPrimitives)
 	{
-		// todo 
-		// 테스트용 라이트 정보
-		const FCullingLight TestLights[] =
-		{
-			{ FVector(5.0f, 0.0f, 0.0f), 1.0f },
-			{ FVector(5.0f, 2.0f, 0.0f), 1.0f }
-		};
-		constexpr uint32 TestLightCount = static_cast<uint32>(sizeof(TestLights) / sizeof(TestLights[0]));
-
-		// todo 
-		// depth buffer 없이 타일 옆면과 카메라 near/far 평면으로 light culling 진행
-		// 추후 depth pre-pass 가 구현되면 이 구간이 변경될 수 있음
-		Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, SceneView.ProjectionMatrix, TestLights, TestLightCount);
-
 		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height);
 	}
 	else
@@ -853,13 +858,22 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	RenderSceneText(TargetWorld, SceneView);
 
 	if (Options.bShowSceneDepth && SceneDepthRenderer)
-		SceneDepthRenderer->OnRender(SceneView, DepthTarget, ColorTarget, Options.SceneDepthRange);
-	if (Options.bEnableFXAA && !Options.bShowSceneDepth && FXAARenderer &&
-		FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
 	{
-		// Both viewport types now exchange and bind the same final output target.
+		SceneDepthRenderer->OnRender(SceneView, DepthTarget, ColorTarget, Options.SceneDepthRange);
+	}
+
+	if (Options.bLightGridDebug)
+	{
+		LightGridDebugRenderer->OnRender(Targets.TileLightResources, ColorTarget, DepthTarget);
+	}
+
+	// 타일 경계와 작은 숫자가 흐려지지 않도록 디버그 화면에는 FXAA를 적용하지 않는다.
+	if (Options.bEnableFXAA && !Options.bShowSceneDepth && !Options.bLightGridDebug && FXAARenderer && FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
+	{
 		if (!Targets.SwapSceneColorAndBind(FXAARenderer->GetOutputTarget()))
+		{
 			RenderCommand::BindRenderPassNoClear(ColorTarget, DepthTarget, Width, Height);
+		}
 	}
 	return true;
 }
@@ -1042,6 +1056,7 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	Options.bEnableFog = ViewClient->GetViewportMode() == EViewportMode::Lit;
 	Options.bEnableFXAA = SettingsPanel->GetSettings().bEnableFXAA;
 	Options.bShowSceneDepth = !bIsPIE && ViewClient->IsSceneDepth();
+	Options.bLightGridDebug = SettingsPanel->GetSettings().bLightGridDebug;
 	Options.SceneDepthRange = ViewClient->GetMaxRange();
 	
 	FTexture2D* DepthTarget = nullptr;

@@ -42,12 +42,7 @@ public:
     bool Init(UFont* InFont);
     bool OnRender(const FTileLightCullingResources& Resources, FTexture2D* ColorTarget, FTexture2D* DepthTarget);
 
-    void SetEnabled(bool bInEnabled) { bEnabled = bInEnabled; }
-    bool IsEnabled() const { return bEnabled; }
-
 private:
-    bool bEnabled = false;
-
     // 기존 에셋과 셰이더 관리자가 소유합니다.
     UFont* Font = nullptr;
     FShaderProgram* Shader = nullptr;
