@@ -351,3 +351,11 @@ void RenderCommand::BindSamplerState(uint32 Slot, ESamplerState SamplerState, ES
 	}
 }
 
+void RenderCommand::BindComputeUAV(uint32 Slot, ID3D11UnorderedAccessView* UAV)
+{
+	RenderDevice->GetContext()->CSSetUnorderedAccessViews(Slot, 1, &UAV, nullptr);
+}
+void RenderCommand::Dispatch(uint32 GroupCountX, uint32 GroupCountY, uint32 GroupCountZ)
+{
+	RenderDevice->GetContext()->Dispatch(GroupCountX, GroupCountY, GroupCountZ);
+}

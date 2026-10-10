@@ -94,6 +94,10 @@ public:
 	static void SetDepthStencilState(EDepthStencilState State);
 	static void BindSamplerState(uint32 Slot, ESamplerState SamplerState, EShaderBindFlagBits FlagBits);
 
+	// 컴퓨트 셰이더의 UAV 슬롯에 연결. nullptr이면 해제.
+	static void BindComputeUAV(uint32 Slot, ID3D11UnorderedAccessView* UAV);
+	static void Dispatch(uint32 GroupCountX, uint32 GroupCountY, uint32 GroupCountZ);
+
 	inline static void SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY Topology)
 	{
 		RenderDevice->GetContext()->IASetPrimitiveTopology(Topology);
