@@ -820,25 +820,9 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 		constexpr uint32 TestLightCount = static_cast<uint32>(sizeof(TestLights) / sizeof(TestLights[0]));
 
 		// todo 
-		// depth buffer 없이 단순히 tile크기만을 바탕으로 light culling 진행
+		// depth buffer 없이 타일 옆면과 카메라 near/far 평면으로 light culling 진행
 		// 추후 depth pre-pass 가 구현되면 이 구간이 변경될 수 있음
 		Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, SceneView.ProjectionMatrix, TestLights, TestLightCount);
-
-
-
-		// todo
-		// light culling이 잘 되었는지, 그 결과를 읽기 위한 테스트 코드
-		// 시험용: 가로·세로가 모두 여러 타일인 뷰에서 읽는다
-		// 16은 현재 셰이더의 타일 크기
-		static bool bReadbackAttempted = false;
-		constexpr uint32 TestTileSize = 16;
-		if (!bReadbackAttempted && Width > TestTileSize && Height > TestTileSize && Targets.TileLightResources.IsValid())
-		{
-			HTR_LOG(Info, "[TileLightCulling] viewWidth={}, viewHeight={}, tilesX={}, tilesY={}", Width, Height, Targets.TileLightResources.TileCountX, Targets.TileLightResources.TileCountY);
-
-			Renderer->GetTileLightCulling().DebugReadbackCounts(Targets.TileLightResources);
-			bReadbackAttempted = true;
-		}
 
 		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height);
 	}
