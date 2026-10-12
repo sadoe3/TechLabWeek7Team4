@@ -41,6 +41,8 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 
 	for (const FLightSceneProxy* Light : World->GetScene().GetLights()) // 월드에 있는 모든 라이트 정보 가져오기
 	{
+		// 현재 렌더링 데이터와 컬링 경로는 PointLight 전용이다.
+		if (Light->GetLightType() != ELightType::Point) continue;
 		if (!Light->IsEnabled() || !Light->IsShown(View.bGameView)) continue;
 		const FPointLightRenderData& Data = Light->GetRenderData();
 		const float Radius = Data.PositionRadius.W;

@@ -1,14 +1,15 @@
 ﻿#include "EnginePCH.h"
 #include "Scene.h"
 #include "Engine/LightSceneProxy.h"
-#include "Component/PointLightComponent.h"
+#include "Component/LightComponent.h"
 
 FScene::~FScene()
 {
 	RemoveAllLights();
 }
 
-void FScene::AddLight(UPointLightComponent* Component)
+// void FScene::AddLight(UPointLightComponent* Component)
+void FScene::AddLight(ULightComponent* Component)
 {
 	if (!Component) return;
 	for (FLightSceneProxy* Proxy : Lights)
@@ -16,7 +17,8 @@ void FScene::AddLight(UPointLightComponent* Component)
 	Lights.Add(new FLightSceneProxy(Component));
 }
 
-void FScene::RemoveLight(UPointLightComponent* Component)
+// void FScene::RemoveLight(UPointLightComponent* Component)
+void FScene::RemoveLight(ULightComponent* Component)
 {
 	for (uint32 Index = 0; Index < Lights.Num(); ++Index)
 	{
