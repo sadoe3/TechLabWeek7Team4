@@ -46,7 +46,7 @@ public:
 	static FPipelineState* GetPSO(const EPSOType& InType, const TArray<FShaderMacro>& Macros = TArray<FShaderMacro>());
 private:
 	
-	void LoadOrCompileShader(const FString& Path, const TArray<FShaderMacro>& Macros = TArray<FShaderMacro>(), bool bComputeShader = false);
+	void LoadOrCompileShader(const FString& Path, const TArray<FShaderMacro>& Macros = TArray<FShaderMacro>());
 	void InitPipelineStates();
 
 	TUniquePtr<FPipelineState> CreatePSO(EPSOType InType, const TArray<FShaderMacro>& Macros = TArray<FShaderMacro>());
