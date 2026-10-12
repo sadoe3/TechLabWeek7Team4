@@ -463,6 +463,9 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		Cooked.Sections.Add(std::move(CookedSection));
 	}
 
+	// Tangent 계산
+	Cooked.CalculateTangents();
+
 	// AABB (변환이 끝난 Position 기준)
 	if (!Cooked.Vertices.IsEmpty())
 	{
