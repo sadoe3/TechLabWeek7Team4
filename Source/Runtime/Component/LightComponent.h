@@ -3,8 +3,6 @@
 #include "SceneComponent.h"
 #include "Math/Vector4.h"
 
-class FLineBatcher;
-
 enum class ELightType : uint8
 {
 	Ambient,
@@ -23,8 +21,8 @@ class ULightComponent : public USceneComponent
 		PROPERTY(bShowLightBounds)
 	REFLECT_END()
 public:
+	~ULightComponent() override { UnregisterComponent(); }
 	virtual ELightType GetLightType() const = 0;
-	virtual void DrawDebug(FLineBatcher* LineBatcher) const {}
 	const FVector& GetLightColor() const { return LightColor; }
 	void SetLightColor(const FVector& InColor) { LightColor = InColor; OnPropertyChanged("LightColor"); }
 	float GetIntensity() const { return Intensity; }

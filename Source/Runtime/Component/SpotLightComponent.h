@@ -2,15 +2,13 @@
 
 #include "Component/PointLightComponent.h"
 
-class FLineBatcher;
-
 class USpotLightComponent : public UPointLightComponent
 {
 	DECLARE_CLASS(USpotLightComponent, UPointLightComponent)
 
 	REFLECT_START(USpotLightComponent)
-		PROPERTY(InnerConeAngle)
-		PROPERTY(OuterConeAngle)
+		PROPERTY_RANGE(InnerConeAngle, 1.0f, 80.0f)
+		PROPERTY_RANGE(OuterConeAngle, 1.0f, 80.0f)
 		PROPERTY(Falloff)
 	REFLECT_END()
 
@@ -31,7 +29,7 @@ public:
 		return WorldTransform.GetForward();
 	}
 
-	void DrawDebug(FLineBatcher* LineBatcher) const override;
+	void OnPropertyChanged(const FString& PropertyName) override;
 
 	float GetInnerConeAngle() const { return InnerConeAngle; }
 	void SetInnerConeAngle(float InAngle) { InnerConeAngle = InAngle; OnPropertyChanged("InnerConeAngle"); }

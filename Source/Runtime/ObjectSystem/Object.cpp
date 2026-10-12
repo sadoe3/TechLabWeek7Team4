@@ -130,9 +130,18 @@ void UObject::Serialize(json& Handle, bool bIsLoading)
 			}
 			case EPropertyType::Color:
 			{
-				FVector4& Value = *static_cast<FVector4*>(Ptr);
-				if (bIsLoading) { Value = Handle[Property.Name].get<FVector4>(); bPropertyLoaded = true; }
-				else Handle[Property.Name] = Value;
+				if (Property.Size == sizeof(FVector))
+				{
+					FVector& Value = *static_cast<FVector*>(Ptr);
+					if (bIsLoading) { Value = Handle[Property.Name].get<FVector>(); bPropertyLoaded = true; }
+					else Handle[Property.Name] = Value;
+				}
+				else if (Property.Size == sizeof(FVector4))
+				{
+					FVector4& Value = *static_cast<FVector4*>(Ptr);
+					if (bIsLoading) { Value = Handle[Property.Name].get<FVector4>(); bPropertyLoaded = true; }
+					else Handle[Property.Name] = Value;
+				}
 				break;
 			}
 			case EPropertyType::Transform:

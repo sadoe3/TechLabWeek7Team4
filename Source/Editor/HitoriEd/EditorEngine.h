@@ -14,6 +14,7 @@
 #include "Editor/Rendering/FXAARenderer.h"
 #include "Editor/Rendering/FireBallRenderer.h"
 #include "Editor/Gizmo/GizmoRenderer.h"
+#include "Editor/Rendering/LightVisualizer.h"
 #include "Render/LineBatcher.h"
 
 #include "Editor/EditorUI/EditorUI.h"
@@ -112,6 +113,7 @@ private:
 	TUniquePtr<FImGuiRenderer> ImGuiRenderer;
 	TUniquePtr<FGridRenderer> GridRenderer;
 	TUniquePtr<FGizmoRenderer> GizmoRenderer;
+	TUniquePtr<FLightVisualizer> LightVisualizer;
 	TUniquePtr<FTextRenderer> TextRenderer;
 	TUniquePtr<FLineBatcher> LineBatcher;
 	TUniquePtr<FGizmo> Gizmo;

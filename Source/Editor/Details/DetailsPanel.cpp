@@ -777,8 +777,17 @@ namespace
 			bChanged = ImGui::DragFloat4(Label.c_str(), &static_cast<FVector4*>(ValuePtr)->X, 0.1f);
 			break;
 		case EPropertyType::Color:
-			bChanged = ImGui::ColorEdit4(Label.c_str(), &static_cast<FVector4*>(ValuePtr)->X);
+		{
+			if (Property.Size == sizeof(FVector))
+			{
+				bChanged = ImGui::ColorEdit3(Label.c_str(), static_cast<FVector*>(ValuePtr)->V);
+			}
+			else if (Property.Size == sizeof(FVector4))
+			{
+				bChanged = ImGui::ColorEdit4(Label.c_str(), static_cast<FVector4*>(ValuePtr)->V);
+			}
 			break;
+		}
 		case EPropertyType::String:
 		{
 			FString* Value = static_cast<FString*>(ValuePtr);

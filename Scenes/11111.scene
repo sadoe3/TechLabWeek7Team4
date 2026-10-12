@@ -1,7 +1,7 @@
 {
     "Actors": [
         {
-            "Class": "ALightActor",
+            "Class": "ASpotLightActor",
             "Components": [
                 {
                     "Class": "UBillboardComponent",
@@ -27,19 +27,19 @@
                         },
                         "Transform": {
                             "Location": [
-                                -1.0706262588500977,
-                                -5.22993278503418,
-                                1.859724998474121
+                                3.6082308292388916,
+                                5.416924476623535,
+                                9.328356742858887
                             ],
                             "Rotation": [
-                                -19.180187225341797,
-                                -87.35095977783203,
-                                -9.039521273734863e-07
+                                83.63629913330078,
+                                157.72596740722656,
+                                157.84991455078125
                             ],
                             "Scale": [
-                                1.0,
-                                1.0,
-                                1.0
+                                2.561215877532959,
+                                3.319441318511963,
+                                2.9088001251220703
                             ]
                         },
                         "bAutoActivate": true,
@@ -51,15 +51,15 @@
                     "Class": "USpotLightComponent",
                     "Name": "USpotLightComponent_0",
                     "Properties": {
-                        "AttenuationRadius": 5.0,
-                        "Falloff": 1.0,
-                        "InnerConeAngle": 15.0,
-                        "Intensity": 1.0,
+                        "AttenuationRadius": 12.699999809265137,
+                        "Falloff": 3.299999952316284,
+                        "InnerConeAngle": 19.266000747680664,
+                        "Intensity": 97.5999984741211,
                         "LightColor": [
                             1.0,
-                            1.0,
-                            0.6000000238418579,
-                            1.0
+                            0.7058823108673096,
+                            0.0,
+                            97.5999984741211
                         ],
                         "OuterConeAngle": 30.0,
                         "Transform": {
@@ -83,24 +83,145 @@
                         "bEnabled": true,
                         "bHiddenInGame": false,
                         "bShowLightBounds": true,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                4.698160171508789,
+                                0.44459211826324463,
+                                3.9856929779052734
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                87.94466400146484,
+                                29.761754989624023
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                64.40973663330078,
+                                87.09146118164063,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "APointLightActor",
+            "Components": [
+                {
+                    "Class": "UBillboardComponent",
+                    "Name": "UBillboardComponent_0",
+                    "Properties": {
+                        "Material": {
+                            "Base": "BillboardMaterial",
+                            "BaseColor": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "PSOType": 14,
+                            "SamplerState": "LinearClamp",
+                            "Textures": [
+                                "Editor/Icon/PointLight_64x.png"
+                            ],
+                            "UVScrollSpeed": [
+                                0.0,
+                                0.0
+                            ]
+                        },
+                        "Transform": {
+                            "Location": [
+                                -7.226785659790039,
+                                -11.998400688171387,
+                                5.874081134796143
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                0.949999988079071,
+                                0.949999988079071,
+                                0.949999988079071
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
                         "bVisible": true
                     }
                 },
                 {
-                    "Class": "USpotLightComponent",
-                    "Name": "USpotLightComponent_1_0",
+                    "Class": "UPointLightComponent",
+                    "Name": "UPointLightComponent_0",
                     "Properties": {
-                        "AttenuationRadius": 5.0,
-                        "Falloff": 1.0,
-                        "InnerConeAngle": 15.0,
-                        "Intensity": 1.0,
+                        "AttenuationRadius": 10.0,
+                        "Intensity": 18.299999237060547,
                         "LightColor": [
-                            1.0,
-                            1.0,
-                            0.6000000238418579,
-                            1.0
+                            0.1636955589056015,
+                            0.906862735748291,
+                            0.03556324169039726,
+                            18.299999237060547
                         ],
-                        "OuterConeAngle": 30.0,
                         "Transform": {
                             "Location": [
                                 0.0,
@@ -122,114 +243,6 @@
                         "bEnabled": true,
                         "bHiddenInGame": false,
                         "bShowLightBounds": true,
-                        "bVisible": true
-                    }
-                }
-            ],
-            "Properties": {
-                "bActorEnableCollision": true
-            }
-        },
-        {
-            "Class": "AStaticMeshActor",
-            "Components": [
-                {
-                    "Class": "UStaticMeshComponent",
-                    "Name": "UPrimitiveComponent_0",
-                    "Properties": {
-                        "OverrideMaterials": [],
-                        "StaticMesh": "Cube",
-                        "Transform": {
-                            "Location": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "Rotation": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "Scale": [
-                                0.009999999776482582,
-                                0.009999999776482582,
-                                0.009999999776482582
-                            ]
-                        },
-                        "bAutoActivate": true,
-                        "bHiddenInGame": false,
-                        "bVisible": true
-                    }
-                }
-            ],
-            "Properties": {
-                "bActorEnableCollision": true
-            }
-        },
-        {
-            "Class": "AStaticMeshActor",
-            "Components": [
-                {
-                    "Class": "UStaticMeshComponent",
-                    "Name": "UPrimitiveComponent_0",
-                    "Properties": {
-                        "OverrideMaterials": [],
-                        "StaticMesh": "Cube",
-                        "Transform": {
-                            "Location": [
-                                -1.3375024795532227,
-                                6.450500965118408,
-                                -0.7287459373474121
-                            ],
-                            "Rotation": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "Scale": [
-                                44.26851272583008,
-                                35.304115295410156,
-                                1.0709999799728394
-                            ]
-                        },
-                        "bAutoActivate": true,
-                        "bHiddenInGame": false,
-                        "bVisible": true
-                    }
-                }
-            ],
-            "Properties": {
-                "bActorEnableCollision": true
-            }
-        },
-        {
-            "Class": "AStaticMeshActor",
-            "Components": [
-                {
-                    "Class": "UStaticMeshComponent",
-                    "Name": "UPrimitiveComponent_0",
-                    "Properties": {
-                        "OverrideMaterials": [],
-                        "StaticMesh": "Cube",
-                        "Transform": {
-                            "Location": [
-                                -0.2538987398147583,
-                                -10.502862930297852,
-                                -0.0070362091064453125
-                            ],
-                            "Rotation": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "Scale": [
-                                37.974510192871094,
-                                1.0,
-                                21.996286392211914
-                            ]
-                        },
-                        "bAutoActivate": true,
-                        "bHiddenInGame": false,
                         "bVisible": true
                     }
                 }

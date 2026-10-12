@@ -17,7 +17,7 @@
 #include "Engine/ForwardGameViewportClient.h"
 #include "Engine/Level.h"
 #include "Engine/World.h"
-#include "GameFramework/Actor/LightActor.h"
+#include "Component/LightComponent.h"
 #include "Input/InputSystem.h"
 #include "Launch/LaunchEngineLoop.h"
 #include "ObjectSystem/ObjectFactory.h"
@@ -134,6 +134,8 @@ bool UEditorEngine::Init() {
 
 	GizmoRenderer = MakeUnique<FGizmoRenderer>();
 	GizmoRenderer->Init(Renderer);
+	LightVisualizer = MakeUnique<FLightVisualizer>();
+	LightVisualizer->Init();
 
 	Gizmo = MakeUnique<FGizmo>();
 
@@ -1061,12 +1063,13 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 		}
 
 		if (Gizmo->GetTarget()) {
-			if (ALightActor *LightActor =
-			Cast<ALightActor>(Gizmo->GetTarget()->GetOwner())) {
-				if (ULightComponent* Light = LightActor->GetLightComponent();
-					Light && Light->IsEnabled() && Light->IsLightBoundsVisible())
+			if (AActor* SelectedActor = Gizmo->GetTarget()->GetOwner()) {
+				for (UActorComponent* Component : SelectedActor->GetComponents())
 				{
-					Light->DrawDebug(LineBatcher.get());
+					if (ULightComponent* Light = Cast<ULightComponent>(Component))
+					{
+						LightVisualizer->Draw(Light, SceneView.ViewProjectionMatrix, LineBatcher.get());
+					}
 				}
 			}
 		}
