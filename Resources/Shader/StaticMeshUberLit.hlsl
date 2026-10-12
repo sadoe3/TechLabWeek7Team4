@@ -172,20 +172,14 @@ float CalculateDistanceAttenuation(float DistanceSquared, float Radius)
 	return RadiusFade * RadiusFade / (1.0f + DistanceSquared);
 }
 
-float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float OuterConeAngle, float Falloff)
+float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float OuterConeAngle)
 {
 	float CosOuter = cos(OuterConeAngle);
 	float CosInner = cos(InnerConeAngle);
-	// Falloff가 0이어도 바깥 원뿔 밖에는 빛이 닿지 않는다.
-	if (CosAngle <= CosOuter)
-		return 0.0f;
-
-	// 두 각도가 같으면 전이 구간 없이 항상 원뿔 내부로 처리한다.
-	if (CosInner == CosOuter)
-		return 1.0f;
-
-	float T = smoothstep(CosOuter, CosInner, CosAngle);
-	return pow(T, Falloff);
+	
+	float AttenuationMask = saturate((CosAngle - CosOuter) / (CosInner - CosOuter));
+	
+	return AttenuationMask * AttenuationMask;
 }
 
 float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 View, float2 ScreenPosition)
@@ -251,16 +245,12 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 			float3 LightDir = Light.Location - Position;
 			float DistanceSquared = dot(LightDir, LightDir);
 			float DistanceAttenuation = CalculateDistanceAttenuation(DistanceSquared, Light.AttenuationRadius);
-			if (DistanceAttenuation <= 0.0f)
-				continue;
 
 			float Distance = sqrt(DistanceSquared);
 			LightDir /= max(Distance, 0.0001f);
 
 			float Cos = dot(-LightDir, normalize(Light.Direction));
-			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle, Light.Falloff);
-			if (AngleAttenuation <= 0.0f)
-				continue;
+			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
 
 			float NdotL = saturate(dot(Normal, LightDir));
 			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse(Albedo);
