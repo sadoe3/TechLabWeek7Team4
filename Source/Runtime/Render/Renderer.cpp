@@ -19,6 +19,8 @@
 #include <unordered_map>
 #include <bit>
 
+#include "SceneRenderData.h"
+
 DECLARE_CYCLE_STAT("Draw Render Packets", STAT_DrawRenderPackets);
 
 namespace
@@ -29,7 +31,7 @@ namespace
 		FVector4 CameraPosition; // W: perspective projection
 		FVector4 CameraForward;
 		FVector4 ViewportLightCount;
-		FPointLightRenderData PointLights[MaxDeferredPointLights];
+		FPointLightRenderData PointLights[MaxPointLights];
 	};
 	static_assert(sizeof(FPointLightRenderData) == 32);
 	static_assert(sizeof(FDeferredLightConstants) % 16 == 0);
@@ -41,8 +43,14 @@ namespace
 	{
 		FMatrix VP;
 		FVector CameraPosition;
-		float Padding;
-		// TODO: 라이트 정보
+		uint32 NumDirectionalLights;
+		uint32 NumPointLights;
+		uint32 NumSpotLights;
+		float Padding[2];
+		FAmbientLightRenderData AmbientLight;
+		FDirectionalLightRenderData DirectionalLights[MaxDirectionalLights];
+		FPointLightRenderData PointLights[MaxPointLights];
+		FSpotLightRenderData SpotLights[MaxSpotLights];
 	};
 	static_assert(sizeof(FFrameConstants) % 16 == 0);
 
@@ -118,15 +126,27 @@ void FRenderer::EnsurePerObjectSlotCapacity(uint32 SlotCount)
 }
 
 // 시점 상수 버퍼 및 렌더링 상태 설정
-void FRenderer::SetupView(const FSceneView& View)
+void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights)
 {
 	bCurrentWireframe = View.ViewMode == EViewportMode::Wireframe;
 	FFrameConstants Constants{
 		.VP = View.ViewProjectionMatrix,
 		.CameraPosition = View.ViewLocation,
-		.Padding = 0.0f,
-		// TODO: 라이트 정보
 	};
+	if (Lights)
+	{
+		Constants.NumDirectionalLights = Lights->DirectionalLights.Num();
+		Constants.NumPointLights = Lights->PointLights.Num();
+		Constants.NumSpotLights = Lights->SpotLights.Num();
+		Constants.AmbientLight = Lights->AmbientLight;
+		for (uint32 i = 0; i < Constants.NumDirectionalLights; ++i)
+			Constants.DirectionalLights[i] = Lights->DirectionalLights[i];
+		for (uint32 i = 0; i < Constants.NumPointLights; ++i)
+			Constants.PointLights[i] = Lights->PointLights[i];
+		for (uint32 i = 0; i < Constants.NumSpotLights; ++i)
+			Constants.SpotLights[i] = Lights->SpotLights[i];
+	}
+
 	if (View.ViewMode == EViewportMode::Unlit)
 		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { {"LIGHTING_ENABLED", "0"} });
 	else if (View.ViewMode == EViewportMode::Lit)
@@ -147,9 +167,9 @@ void FRenderer::RenderAll(const FSceneView& View, const FRenderQueue& InQueue)
 }
 
 // 불투명 요소 렌더링
-void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, bool bGBufferPass)
+void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights, bool bGBufferPass)
 {
-	SetupView(View);
+	SetupView(View, Lights);
 	DrawStaticGroups(bGBufferPass);
 	DrawPackets(InQueue, 0, InQueue.GetFirstTranslucentIndex(), View.ViewProjectionMatrix, bGBufferPass);
 }
@@ -165,7 +185,7 @@ void FRenderer::DrawDeferredLighting(const FSceneView& View, const FDeferredView
 	Constants.CameraPosition = FVector4(View.ViewLocation.X, View.ViewLocation.Y,
 		View.ViewLocation.Z, View.bIsPerspective ? 1.0f : 0.0f);
 	Constants.CameraForward = FVector4(View.ViewForward.X, View.ViewForward.Y, View.ViewForward.Z, 0.0f);
-	const uint32 LightCount = std::min<uint32>(static_cast<uint32>(PointLights.Num()), MaxDeferredPointLights);
+	const uint32 LightCount = std::min<uint32>(static_cast<uint32>(PointLights.Num()), MaxPointLights);
 	Constants.ViewportLightCount = FVector4(
 		static_cast<float>(Targets.SceneColor->GetWidth()),
 		static_cast<float>(Targets.SceneColor->GetHeight()),
@@ -212,9 +232,9 @@ void FRenderer::DrawToneMap(FTexture2D* LightingHDR, FTexture2D* Depth)
 }
 
 // 반투명 요소 렌더링
-void FRenderer::RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue)
+void FRenderer::RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights)
 {
-	SetupView(View);
+	SetupView(View, Lights);
 	DrawPackets(InQueue, InQueue.GetFirstTranslucentIndex(), InQueue.Num(), View.ViewProjectionMatrix);
 	StaticGroups.clear();
 }

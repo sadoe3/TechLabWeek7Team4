@@ -19,7 +19,7 @@ public:
 	{
 		AttenuationRadius = 5.0f;
 		Intensity = 1.0f;
-		LightColor = FVector4(1.0f, 1.0f, 0.6f, 1.0f);
+		LightColor = FVector(1.0f, 1.0f, 0.6f);
 	}
 	virtual ~USpotLightComponent() override = default;
 	ELightType GetLightType() const override { return ELightType::Spot; }

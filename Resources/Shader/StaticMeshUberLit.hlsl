@@ -33,47 +33,53 @@
 	#error "Invalid SHADING_MODEL"
 #endif
 
-#define MAX_DIRECTIONAL_LIGHT 4
-#define MAX_POINT_LIGHT 4
-#define MAX_SPOT_LIGHT 4
+#define MAX_DIRECTIONAL_LIGHT 8
+#define MAX_POINT_LIGHT 8
+#define MAX_SPOT_LIGHT 8
 
 struct AmbientLightInfo
 {
 	float3 Color;
-	float Padding;
+	float Intensity;
 };
 
 struct DirectionalLightInfo
 {
 	float3 Color;
-	float Padding1;
+	float Intensity;
 	float3 Direction;
-	float Padding2;
+	float Padding;
 };
 
 struct PointLightInfo
 {
 	float3 Color;
+	float Intensity;
+	float3 Location;
 	float AttenuationRadius;
-	float3 Position;
-	float Padding;
 };
 
 struct SpotLightInfo
 {
 	float3 Color;
+	float Intensity;
+	float3 Location;
 	float AttenuationRadius;
-	float3 Position;
-	float InnerConeAngle;
 	float3 Direction;
+	float InnerConeAngle;
 	float OuterConeAngle;
+	float Falloff;
+	float2 Padding;
 };
 
 cbuffer FrameConstants : register(b0)
 {
 	matrix VP;
 	float3 CameraPosition;
-	float FrameConstantsPadding;
+	uint NumDirectionalLights;
+	uint NumPointLights;
+	uint NumSpotLights;
+	float2 FrameConstantsPadding;
 	AmbientLightInfo AmbientLight;
 	DirectionalLightInfo DirectionalLights[MAX_DIRECTIONAL_LIGHT];
 	PointLightInfo PointLights[MAX_POINT_LIGHT];
@@ -114,10 +120,6 @@ SamplerState Sampler : register(s0);
 
 static const float Pi = 3.14159265359f;
 
-static const float3 LightDir = normalize(float3(0.5f, 0.5f, -1.0f));
-static const float3 LightColor = float3(1.0f, 1.0f, 1.0f);
-static const float3 AmbientColor = float3(0.5f, 0.5f, 0.5f);
-
 float3 Diffuse(float3 Kd)
 {
 	return Kd / Pi;
@@ -129,28 +131,78 @@ float3 SpecularPhong(float3 Ks, float3 R, float3 V, float Shininess)
 	return Ks * pow(RdotV, Shininess) * (Shininess + 2.0f) / (2.0f * Pi);
 }
 
-float3 SpecularBlinnPhong(float3 Ks, float3 N, float3 L, float3 V, float Shininess)
+float3 SpecularBlinnPhong(float3 Ks, float3 N, float3 H, float Shininess)
 {
-	float3 H = normalize(L + V);
 	float NdotH = saturate(dot(N, H));
 	return Ks * pow(NdotH, Shininess) * (Shininess + 8.0f) / (8.0f * Pi);
 }
 
+float3 Specular(float3 Ks, float3 N, float3 L, float3 V, float Shininess)
+{
+#if SPECULAR_MODEL == SPECULAR_PHONG
+	return SpecularPhong(Ks, reflect(L, N), V, Shininess);
+#elif SPECULAR_MODEL == SPECULAR_BLINN_PHONG
+	float3 H = normalize(L + V);
+	return SpecularBlinnPhong(Ks, N, H, Shininess);
+#endif
+	return float3(0.0f, 0.0f, 0.0f);
+}
+
 float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 View)
 {
-	float3 FinalColor = Albedo * AmbientColor;
+	float3 FinalColor = Albedo;
 	
 #if LIGHTING_ENABLED == 0
 	return FinalColor;
 #endif
 	
-	float NdotL = saturate(dot(Normal, -LightDir));
-	FinalColor += NdotL * LightColor * Diffuse(Albedo);
-#if SPECULAR_MODEL == SPECULAR_PHONG
-	FinalColor += NdotL * LightColor * SpecularPhong(float3(1.0f, 1.0f, 1.0f), reflect(LightDir, Normal), View, 10.0f);
-#elif SPECULAR_MODEL == SPECULAR_BLINN_PHONG
-	FinalColor += NdotL * LightColor * SpecularBlinnPhong(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 40.0f);
-#endif
+	for (uint i = 0; i < NumDirectionalLights; ++i)
+	{
+		DirectionalLightInfo Light = DirectionalLights[i];
+		
+		float3 LightDir = normalize(Light.Direction);
+		float NdotL = saturate(dot(Normal, -LightDir));
+		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse(Albedo);
+		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 40.0f);
+	}
+	
+	for (uint i = 0; i < NumPointLights; ++i)
+	{
+		PointLightInfo Light = PointLights[i];
+		
+		float3 LightDir = Light.Location - Position;
+		float Distance = length(LightDir);
+		LightDir /= max(Distance, 0.0001f);
+		
+		float D = Distance / max(Light.AttenuationRadius, 0.0001f);
+		float Attenuation = saturate(1.0f / (D * D));
+		
+		float NdotL = saturate(dot(Normal, LightDir));
+		FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Diffuse(Albedo);
+		FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
+	}
+	
+	for (uint i = 0; i < NumSpotLights; ++i)
+	{
+		SpotLightInfo Light = SpotLights[i];
+		
+		float3 LightDir = Light.Location - Position;
+		float Distance = length(LightDir);
+		LightDir /= max(Distance, 0.0001f);
+		
+		float D = Distance / max(Light.AttenuationRadius, 0.0001f);
+		float DistanceAttenuation = saturate(1.0f / (D * D));
+		
+		float Cos = dot(-LightDir, normalize(Light.Direction));
+		float CosOuter = cos(Light.OuterConeAngle);
+		float CosInner = cos(Light.InnerConeAngle);
+		float T = smoothstep(CosOuter, CosInner, Cos);
+		float AngleAttenuation = pow(T, Light.Falloff);
+		
+		float NdotL = saturate(dot(Normal, LightDir));
+		FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse(Albedo);
+		FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
+	}
 	
 	return FinalColor;
 }

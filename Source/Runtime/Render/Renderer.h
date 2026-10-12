@@ -8,6 +8,8 @@
 #include "Occlusion/GPUOcclusion.h"
 #include "Engine/LightSceneProxy.h"
 
+struct FFrameLightData;
+
 // 오클루전 컬링의 효과 상한을 재기 위한 측정 결과 (디버그 전용)
 struct FOcclusionMeasureResult
 {
@@ -33,16 +35,16 @@ public:
 	void DrawToneMap(FTexture2D* LightingHDR, FTexture2D* Depth);
 
 	// 시점 상수 버퍼 및 렌더링 상태 설정
-	void SetupView(const FSceneView& View);
+	void SetupView(const FSceneView& View, const FFrameLightData* Lights);
 
 	// ObjViewer uses this forward path. Editor/PIE use SceneRenderer and GBuffer.
 	void RenderAll(const FSceneView& View, const FRenderQueue& InQueue);
 
 	// 불투명 요소 렌더링
-	void RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, bool bGBufferPass = false);
+	void RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr, bool bGBufferPass = false);
 
 	// 반투명 요소 렌더링
-	void RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue);
+	void RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr);
 
 	// 오클루전 객체 조회
 	FGPUOcclusion& GetGPUOcclusion() { return GPUOcclusion; }
