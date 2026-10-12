@@ -3,6 +3,8 @@
 #include "SceneComponent.h"
 #include "Math/Vector4.h"
 
+class FLineBatcher;
+
 enum class ELightType : uint8
 {
 	Ambient,
@@ -18,14 +20,17 @@ class ULightComponent : public USceneComponent
 		PROPERTY_TYPE(LightColor, Color)
 		PROPERTY(Intensity)
 		PROPERTY(bEnabled)
+		PROPERTY(bShowLightBounds)
 	REFLECT_END()
 public:
 	virtual ELightType GetLightType() const = 0;
+	virtual void DrawDebug(FLineBatcher* LineBatcher) const {}
 	const FVector4& GetLightColor() const { return LightColor; }
 	void SetLightColor(const FVector4& InColor) { LightColor = InColor; OnPropertyChanged("LightColor"); }
 	float GetIntensity() const { return Intensity; }
 	void SetIntensity(float InIntensity) { Intensity = InIntensity; OnPropertyChanged("Intensity"); }
 	bool IsEnabled() const { return bEnabled; }
+	bool IsLightBoundsVisible() const { return bShowLightBounds; }
 	void SetEnabled(bool bInEnabled) { bEnabled = bInEnabled; OnPropertyChanged("bEnabled"); }
 
 	void OnPropertyChanged(const FString& PropertyName)
@@ -44,4 +49,5 @@ protected:
 	FVector4 LightColor{1.0f, 1.0f, 1.0f, 1.0f};
 	float Intensity = 1.0f;
 	bool bEnabled = true;
+	bool bShowLightBounds = true;
 };

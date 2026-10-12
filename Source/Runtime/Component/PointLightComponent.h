@@ -14,6 +14,7 @@ public:
 	UPointLightComponent() { Intensity = 8.0f; }
 	~UPointLightComponent() override { UnregisterComponent(); }
 	ELightType GetLightType() const override { return ELightType::Point; }
+	void DrawDebug(FLineBatcher* LineBatcher) const override;
 	float GetAttenuationRadius() const { return AttenuationRadius; }
 	void SetAttenuationRadius(float InRadius) { AttenuationRadius = InRadius; OnPropertyChanged("AttenuationRadius"); }
 

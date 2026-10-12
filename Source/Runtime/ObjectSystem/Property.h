@@ -1,5 +1,8 @@
 #pragma once
 
+#include <initializer_list>
+#include <type_traits>
+#include "Container/Array.h"
 #include "Core/EngineString.h"
 #include "Math/EngineMath.h"
 #include "Math/Transform.h"
@@ -7,12 +10,16 @@
 class UMaterial;
 class UFont;
 
-enum class EPropertyType { Unknown, Float, Int, String, Bool, Vector, Vector4, Color, Rotator, Transform, Object};
+enum class EPropertyType { Unknown, Float, Int, String, Bool, Vector, Vector4, Color, Rotator, Transform, Object, Enum};
 
 template <typename T>
 constexpr EPropertyType GetPropertyType()
 {
-    if constexpr (std::is_pointer_v<T> &&
+    if constexpr (std::is_enum_v<T>)
+    {
+        return EPropertyType::Enum;
+    }
+    else if constexpr (std::is_pointer_v<T> &&
         std::is_base_of_v<UObject, std::remove_pointer_t<T>>)
     {
         return EPropertyType::Object;
@@ -38,6 +45,19 @@ DEFINE_PROPERTY_TYPE(FVector4, Vector4)
 DEFINE_PROPERTY_TYPE(FTransform, Transform)
 DEFINE_PROPERTY_TYPE(FRotator, Rotator)
 
+struct FEnumEntry
+{
+    int64 Value;
+    FString DisplayName;
+
+    template <typename T>
+    FEnumEntry(T InValue, const FString& InDisplayName)
+        : Value(static_cast<int64>(InValue)), DisplayName(InDisplayName)
+    {
+        static_assert(std::is_enum_v<T>, "Enum entry requires an enum value");
+    }
+};
+
 struct FProperty
 {
     FString Name;
@@ -48,4 +68,7 @@ struct FProperty
 	float MinValue = 0.0f;
 	float MaxValue = 0.0f;
 	bool bHasRange = false;
+    TArray<FEnumEntry> EnumEntries;
+    int64 (*GetEnumValue)(const void*) = nullptr;
+    void (*SetEnumValue)(void*, int64) = nullptr;
 };

@@ -31,7 +31,7 @@ public:
 		return WorldTransform.GetForward();
 	}
 
-	void DrawDebug(FLineBatcher* LineBatcher) const;
+	void DrawDebug(FLineBatcher* LineBatcher) const override;
 
 	float GetInnerConeAngle() const { return InnerConeAngle; }
 	void SetInnerConeAngle(float InAngle) { InnerConeAngle = InAngle; OnPropertyChanged("InnerConeAngle"); }

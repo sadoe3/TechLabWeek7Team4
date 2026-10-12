@@ -722,6 +722,43 @@ namespace
 		case EPropertyType::Int:
 			bChanged = ImGui::DragInt(Label.c_str(), static_cast<int*>(ValuePtr), 1.0f);
 			break;
+		case EPropertyType::Enum:
+		{
+			if (!Property.GetEnumValue ||
+				!Property.SetEnumValue ||
+				Property.EnumEntries.IsEmpty())
+			{
+				ImGui::TextDisabled("(No enum entries)");
+				break;
+			}
+
+			const int64 CurrentValue = Property.GetEnumValue(ValuePtr);
+			const char* Preview = "(Unknown)";
+
+			for (const FEnumEntry& Entry : Property.EnumEntries)
+			{
+				if (Entry.Value == CurrentValue)
+				{
+					Preview = Entry.DisplayName.c_str();
+					break;
+				}
+			}
+
+			if (ImGui::BeginCombo(Label.c_str(), Preview))
+			{
+				for (const FEnumEntry& Entry : Property.EnumEntries)
+				{
+					const bool bSelected = Entry.Value == CurrentValue;
+					if (ImGui::Selectable(Entry.DisplayName.c_str(), bSelected) && !bSelected)
+					{
+						Property.SetEnumValue(ValuePtr, Entry.Value);
+						bChanged = true;
+					}
+				}
+				ImGui::EndCombo();
+			}
+			break;
+		}
 		case EPropertyType::Bool:
 			bChanged = ImGui::Checkbox(Label.c_str(), static_cast<bool*>(ValuePtr));
 			break;

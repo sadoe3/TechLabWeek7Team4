@@ -42,6 +42,25 @@ public:
 	}
 
 	template <typename T>
+	void AddProperty(const FString& InName, uint64 InOffset,
+		std::initializer_list<FEnumEntry> InEntries)
+	{
+		static_assert(std::is_enum_v<T>, "Enum property requires an enum member");
+		FProperty Property{ InName, EPropertyType::Enum, InOffset, sizeof(T) };
+		Property.EnumEntries = InEntries;
+		// Read and write the actual enum type, including enums with a uint8 underlying type.
+		Property.GetEnumValue = [](const void* Value) -> int64
+		{
+			return static_cast<int64>(*static_cast<const T*>(Value));
+		};
+		Property.SetEnumValue = [](void* Value, int64 InValue)
+		{
+			*static_cast<T*>(Value) = static_cast<T>(InValue);
+		};
+		Properties.Add(std::move(Property));
+	}
+
+	template <typename T>
 	void AddProperty(const FString& InName, uint64 InOffset, EPropertyType InType)
 	{
 		Properties.Add({ InName, InType, InOffset, sizeof(T) });

@@ -1063,7 +1063,11 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 		if (Gizmo->GetTarget()) {
 			if (ALightActor *LightActor =
 			Cast<ALightActor>(Gizmo->GetTarget()->GetOwner())) {
-				LightActor->GetSpotLightComponent()->DrawDebug(LineBatcher.get());
+				if (ULightComponent* Light = LightActor->GetLightComponent();
+					Light && Light->IsEnabled() && Light->IsLightBoundsVisible())
+				{
+					Light->DrawDebug(LineBatcher.get());
+				}
 			}
 		}
 

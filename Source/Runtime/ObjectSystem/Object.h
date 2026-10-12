@@ -18,6 +18,9 @@ public: \
 #define PROPERTY(PropertyName) \
     InClass->AddProperty<decltype(ThisClass::PropertyName)>(#PropertyName, offsetof(ThisClass, PropertyName));
 
+#define PROPERTY_ENUM(PropertyName, ...) \
+    InClass->AddProperty<decltype(ThisClass::PropertyName)>(#PropertyName, offsetof(ThisClass, PropertyName), { __VA_ARGS__ });
+
 #define PROPERTY_TYPE(PropertyName, PropertyType) \
     InClass->AddProperty<decltype(ThisClass::PropertyName)>(#PropertyName, offsetof(ThisClass, PropertyName), EPropertyType::##PropertyType);
 
