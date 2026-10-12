@@ -5,75 +5,53 @@
 
 namespace
 {
-	// 밑면 원의 분할 수. 너무 높이면 라인 배처 정점을 빨리 소모한다.
 	constexpr int32 CONE_SEGMENT_COUNT = 24;
-
-	// 꼭짓점에서 밑면으로 뻗는 옆선 개수
 	constexpr int32 CONE_SIDE_LINE_COUNT = 24;
+	constexpr int32 CAP_ARC_SEGMENT_COUNT = 16;
 
-	// Apex에서 Forward 방향으로 Range만큼 뻗은 원뿔을 와이어로 그린다.
-	// Right/Up은 Forward에 직교하는 밑면 평면의 축이다.
-	void AddWireCone(
-		FLineBatcher* LineBatcher,
-		const FVector& Apex,
-		const FVector& Forward,
-		const FVector& Right,
-		const FVector& Up,
-		float HalfAngleDegrees,
-		float Range,
-		const FVector4& Color)
+	// Outer/Inner 각도와 광원으로부터의 거리 반경으로 제한되는 범위를 그린다.
+	void AddWireCone(FLineBatcher* LineBatcher, const FVector& Apex, const FVector& Forward, const FVector& Right, const FVector& Up, float HalfAngleDegrees, float Range, const FVector4& Color)
 	{
 		const float HalfAngle = FMath::DegreesToRadians(HalfAngleDegrees);
-		const float BaseRadius = std::tanf(HalfAngle) * Range;
+		const float RingRadius = std::sin(HalfAngle) * Range;
+		const FVector RingCenter = Apex + Forward * (std::cos(HalfAngle) * Range);
 
-		const FVector BaseCenter = Apex + Forward * Range;
-
-		// 밑면 원
-		FVector PreviousPoint;
-		FVector FirstPoint;
-
-		for (int32 i = 0; i < CONE_SEGMENT_COUNT; ++i)
+		// 원뿔 옆면과 반경 구가 만나는 원.
+		for (int32 Index = 0; Index < CONE_SEGMENT_COUNT; ++Index)
 		{
-			const float Angle = (2.0f * PI * i) / CONE_SEGMENT_COUNT;
-
-			const FVector Point =
-				BaseCenter +
-				Right * (std::cosf(Angle) * BaseRadius) +
-				Up * (std::sinf(Angle) * BaseRadius);
-
-			if (i == 0)
-			{
-				FirstPoint = Point;
-			}
-			else
-			{
-				LineBatcher->AddLine(PreviousPoint, Point, Color);
-			}
-
-			PreviousPoint = Point;
+			const float AngleA = 2.0f * PI * Index / CONE_SEGMENT_COUNT;
+			const float AngleB = 2.0f * PI * (Index + 1) / CONE_SEGMENT_COUNT;
+			const FVector A = RingCenter + (Right * std::cos(AngleA) + Up * std::sin(AngleA)) * RingRadius;
+			const FVector B = RingCenter + (Right * std::cos(AngleB) + Up * std::sin(AngleB)) * RingRadius;
+			LineBatcher->AddLine(A, B, Color);
 		}
 
-		// 마지막 점과 첫 점을 이어 원을 닫는다
-		LineBatcher->AddLine(PreviousPoint, FirstPoint, Color);
-
-		// 옆선
-		for (int32 i = 0; i < CONE_SIDE_LINE_COUNT; ++i)
+		// 옆선은 거리 반경에서 끝나며, 끝면은 평면이 아닌 구면이다.
+		for (int32 Index = 0; Index < CONE_SIDE_LINE_COUNT; ++Index)
 		{
-			const float Angle = (2.0f * PI * i) / CONE_SIDE_LINE_COUNT;
+			const float Angle = 2.0f * PI * Index / CONE_SIDE_LINE_COUNT;
+			const FVector Radial = Right * std::cos(Angle) + Up * std::sin(Angle);
+			LineBatcher->AddLine(Apex, RingCenter + Radial * RingRadius, Color);
 
-			const FVector Point =
-				BaseCenter +
-				Right * (std::cosf(Angle) * BaseRadius) +
-				Up * (std::sinf(Angle) * BaseRadius);
-
-			LineBatcher->AddLine(Apex, Point, Color);
+			// 네 방향의 호로 둥근 끝면을 표시한다.
+			if (Index % (CONE_SIDE_LINE_COUNT / 4) == 0)
+			{
+				FVector Previous = Apex + Forward * Range;
+				for (int32 Segment = 1; Segment <= CAP_ARC_SEGMENT_COUNT; ++Segment)
+				{
+					const float ArcAngle = HalfAngle * Segment / CAP_ARC_SEGMENT_COUNT;
+					const FVector Point = Apex + (Forward * std::cos(ArcAngle) + Radial * std::sin(ArcAngle)) * Range;
+					LineBatcher->AddLine(Previous, Point, Color);
+					Previous = Point;
+				}
+			}
 		}
 	}
 }
 
 void USpotLightComponent::DrawDebug(FLineBatcher* LineBatcher) const
 {
-	if (LineBatcher == nullptr)
+	if (!LineBatcher || !(AttenuationRadius > 0.0f))
 	{
 		return;
 	}
@@ -88,10 +66,10 @@ void USpotLightComponent::DrawDebug(FLineBatcher* LineBatcher) const
 	FVector Up = WorldTransform.GetUp();
 
 	// 에디터에서 값을 직접 드래그하므로 범위를 신뢰할 수 없다.
-	// tan(90도)는 무한대라 원뿔 정점이 NaN이 되므로 여기서 막는다.
+	// 조명 데이터와 동일한 각도 범위를 적용한다.
 	const float SafeOuterAngle = FMath::Clamp(OuterConeAngle, 0.0f, 89.0f);
 	const float SafeInnerAngle = FMath::Clamp(InnerConeAngle, 0.0f, SafeOuterAngle);
-	const float SafeRadius = (AttenuationRadius > 0.0f) ? AttenuationRadius : 0.0f;
+	const float SafeRadius = AttenuationRadius;
 
 	// 바깥 원뿔은 라이트 색 그대로, 안쪽은 구분되도록 흐리게
 	AddWireCone(LineBatcher, Apex, Forward, Right, Up, SafeOuterAngle, SafeRadius, LightColor);
