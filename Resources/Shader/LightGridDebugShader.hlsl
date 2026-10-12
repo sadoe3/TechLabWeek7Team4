@@ -170,7 +170,19 @@ float4 mainPS(VSOutput Input) : SV_Target
     float2 LocalPosition = Input.Position.xy - float2(TileOrigin);
 
     float NumberOpacity = GetNumberOpacity(Count, LocalPosition, float2(TileExtent));
-    Color = lerp(Color, float3(1.0f, 1.0f, 1.0f), NumberOpacity);
+    float ShadowOpacity = GetNumberOpacity(Count, LocalPosition - float2(1.0f, 1.0f), float2(TileExtent));
 
-    return float4(Color, 1.0f);
+    // 라이트가 없는 타일은 배경을 유지하고 숫자 0만 표시한다.
+    float Alpha = Count > 0 ? 0.25f : 0.0f;
+    float3 PremultipliedColor = Color * Alpha;
+    PremultipliedColor *= 1.0f - ShadowOpacity;
+    Alpha = ShadowOpacity + Alpha * (1.0f - ShadowOpacity);
+    PremultipliedColor = float3(1.0f, 1.0f, 1.0f) * NumberOpacity + PremultipliedColor * (1.0f - NumberOpacity);
+    Alpha = NumberOpacity + Alpha * (1.0f - NumberOpacity);
+
+    // 엔진 AlphaBlend의 SrcAlpha 곱셈에 맞춰 일반 알파 색상으로 반환한다.
+    if (Alpha <= 0.0f)
+        return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+    return float4(PremultipliedColor / Alpha, Alpha);
 }
