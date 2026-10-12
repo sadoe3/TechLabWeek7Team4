@@ -86,6 +86,18 @@ namespace
 					Material->Textures[0] = Texture;
 				}
 			}
+
+			if (!Slot.NormalMapTexturePath.empty())
+			{
+				UTexture2D* NormalMap = UAssetManager::Get().LoadTexture(Slot.NormalMapTexturePath);
+
+				if (NormalMap)
+				{
+					Material->Textures.SetNum(2);
+					Material->Textures[1] = NormalMap;
+				}
+			}
+
 			Mesh->Materials.Add(Material);
 		}
 
