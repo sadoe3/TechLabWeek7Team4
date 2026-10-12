@@ -74,7 +74,7 @@ namespace
 			| (static_cast<uint64>(Group.LODIndex & 0x3) << 29);
 	}
 
-	TArray<FShaderMacro> MakeShadingModelMacro(EShadingModel ShadingModel)
+	TArray<FShaderMacro> MakeShadingModelMacro(EShadingModel ShadingModel, bool bNormalMapEnabled = false)
 	{
 		TArray<FShaderMacro> Macros;
 		switch (ShadingModel)
@@ -92,6 +92,10 @@ namespace
 			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_GOURAUD" });
 			break;
 		}
+
+		if (bNormalMapEnabled)
+			Macros.Add({ "NORMAL_MAP_ENABLED", "1" });
+
 		return Macros;
 	}
 }
@@ -155,13 +159,25 @@ void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights,
 	}
 
 	if (View.ViewMode == EViewportMode::Unlit)
-		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { {"LIGHTING_ENABLED", "0"} });
+	{
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { { "LIGHTING_ENABLED", "0" } });
+		CurrentOpaquePSONormalMap = CurrentOpaquePSO;
+	}
 	else if (View.ViewMode == EViewportMode::Lit)
+	{
 		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, MakeShadingModelMacro(View.ShadingModel));
+		CurrentOpaquePSONormalMap = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, MakeShadingModelMacro(View.ShadingModel, true));
+	}
 	else if (View.ViewMode == EViewportMode::Wireframe)
+	{
 		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Wireframe, MakeShadingModelMacro(View.ShadingModel));
+		CurrentOpaquePSONormalMap = CurrentOpaquePSO;
+	}
 	else if (View.ViewMode == EViewportMode::SceneDepth)
-		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { {"LIGHTING_ENABLED", "0"} });
+	{
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { { "LIGHTING_ENABLED", "0" } });
+		CurrentOpaquePSONormalMap = CurrentOpaquePSO;
+	}
 
 	RenderCommand::UpdateBufferData(ViewCB.get(), &Constants);
 }
@@ -510,6 +526,7 @@ void FRenderer::EndObjectConstants()
 void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, bool bGBufferPass)
 {
 	EPSOType PSOType = material->PSOType;
+	bool bNormalMap = material->Textures.Num() > 1 && material->Textures[1];
 
 	if (PSOType == EPSOType::StaticMesh_Opaque)
 	{
@@ -525,7 +542,10 @@ void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, bool bGBuff
 		}
 		else
 		{
-			RenderCommand::BindPipelineState(*CurrentOpaquePSO);
+			if (bNormalMap)
+				RenderCommand::BindPipelineState(*CurrentOpaquePSONormalMap);
+			else
+				RenderCommand::BindPipelineState(*CurrentOpaquePSO);
 		}
 	}
 	else

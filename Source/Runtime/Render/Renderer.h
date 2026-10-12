@@ -74,6 +74,7 @@ private:
 	bool bCurrentWireframe = false;
 
 	FPipelineState* CurrentOpaquePSO = nullptr;
+	FPipelineState* CurrentOpaquePSONormalMap = nullptr;
 
 	// 측정 전용 자원
 	TArray<ComPtr<ID3D11Query>> OcclusionQueries;
