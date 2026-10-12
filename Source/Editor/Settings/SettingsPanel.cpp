@@ -338,7 +338,7 @@ void FSettingsPanel::ApplyViewportSettings()
 		if (Settings.ViewFov[Index] > 0.0f)
 			Client->SetViewFOV(Settings.ViewFov[Index]);
 		if (Settings.ViewWireframe[Index] >= 0)
-			Client->SetViewportMode(Settings.ViewWireframe[Index] == 1 ? EViewportMode::Wireframe : EViewportMode::Solid);
+			Client->SetViewportMode(Settings.ViewWireframe[Index] == 1 ? EViewportMode::Wireframe : EViewportMode::Lit);
 	}
 }
 

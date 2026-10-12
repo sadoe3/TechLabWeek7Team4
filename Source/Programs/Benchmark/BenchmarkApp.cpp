@@ -329,7 +329,8 @@ void UBenchmarkEngine::Tick(float DeltaTime)
 	BenchmarkView.ViewProjectionMatrix = ViewProjection;
 	BenchmarkView.ViewLocation = CameraLocation;
 	BenchmarkView.ViewForward = CameraForward;
-	BenchmarkView.bIsWireframe = false;
+	BenchmarkView.ViewMode = EViewportMode::Lit;
+	BenchmarkView.ShadingModel = EShadingModel::BlinnPhong;
 
 	// 반투명이 Grid 위에 합성되도록 불투명 → Grid → 반투명 순서로 그린다.
 	{

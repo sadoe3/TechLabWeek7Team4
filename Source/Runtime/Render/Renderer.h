@@ -68,6 +68,8 @@ private:
 	bool bUsePerObjectSlots = false;
 	bool bCurrentWireframe = false;
 
+	FPipelineState* CurrentOpaquePSO = nullptr;
+
 	// 측정 전용 자원
 	TArray<ComPtr<ID3D11Query>> OcclusionQueries;
 	ComPtr<ID3D11DepthStencilState> DepthLessEqualReadOnly;

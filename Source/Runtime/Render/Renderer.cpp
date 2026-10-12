@@ -61,6 +61,27 @@ namespace
 			| (static_cast<uint64>(Group.Mesh->SortID) << 31)
 			| (static_cast<uint64>(Group.LODIndex & 0x3) << 29);
 	}
+
+	TArray<FShaderMacro> MakeShadingModelMacro(EShadingModel ShadingModel)
+	{
+		TArray<FShaderMacro> Macros;
+		switch (ShadingModel)
+		{
+		case EShadingModel::Lambert:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_LAMBERT" });
+			break;
+		case EShadingModel::Phong:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_PHONG" });
+			break;
+		case EShadingModel::BlinnPhong:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_BLINN_PHONG" });
+			break;
+		case EShadingModel::Gouraud:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_GOURAUD" });
+			break;
+		}
+		return Macros;
+	}
 }
 
 bool FRenderer::Init()
@@ -99,13 +120,22 @@ void FRenderer::EnsurePerObjectSlotCapacity(uint32 SlotCount)
 // 시점 상수 버퍼 및 렌더링 상태 설정
 void FRenderer::SetupView(const FSceneView& View)
 {
-	bCurrentWireframe = View.bIsWireframe;
+	bCurrentWireframe = View.ViewMode == EViewportMode::Wireframe;
 	FFrameConstants Constants{
 		.VP = View.ViewProjectionMatrix,
 		.CameraPosition = View.ViewLocation,
 		.Padding = 0.0f,
 		// TODO: 라이트 정보
 	};
+	if (View.ViewMode == EViewportMode::Unlit)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { {"LIGHTING_ENABLED", "0"} });
+	else if (View.ViewMode == EViewportMode::Lit)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, MakeShadingModelMacro(View.ShadingModel));
+	else if (View.ViewMode == EViewportMode::Wireframe)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Wireframe, MakeShadingModelMacro(View.ShadingModel));
+	else if (View.ViewMode == EViewportMode::SceneDepth)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { {"LIGHTING_ENABLED", "0"} });
+
 	RenderCommand::UpdateBufferData(ViewCB.get(), &Constants);
 }
 
@@ -450,22 +480,32 @@ void FRenderer::EndObjectConstants()
 void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, bool bGBufferPass)
 {
 	EPSOType PSOType = material->PSOType;
-	if (bGBufferPass && PSOType == EPSOType::StaticMesh_Opaque)
-	{
-		PSOType = EPSOType::StaticMesh_GBuffer;
-	}
-	else if (bInWireframe && PSOType == EPSOType::StaticMesh_Opaque)
-	{
-		PSOType = EPSOType::StaticMesh_Wireframe;
-	}
 
-	if (FPipelineState* PSO = FRenderResourceManager::GetPSO(PSOType))
+	if (PSOType == EPSOType::StaticMesh_Opaque)
 	{
-		RenderCommand::BindPipelineState(*PSO);
+		if (bGBufferPass)
+		{
+			if (FPipelineState* PSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_GBuffer))
+			{
+				RenderCommand::BindPipelineState(*PSO);
 
-		if (bGBufferPass && bInWireframe)
-			RenderCommand::SetRasterizerState(ERasterizerState::Wireframe);
+				if (bInWireframe)
+					RenderCommand::SetRasterizerState(ERasterizerState::Wireframe);
+			}
+		}
+		else
+		{
+			RenderCommand::BindPipelineState(*CurrentOpaquePSO);
+		}
 	}
+	else
+	{
+		if (FPipelineState* PSO = FRenderResourceManager::GetPSO(PSOType))
+		{
+			RenderCommand::BindPipelineState(*PSO);
+		}
+	}
+	
 	// 텍스처와 샘플러 바인딩
 	for (size_t i = 0; i < material->Textures.size(); i++)
 	{

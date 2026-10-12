@@ -273,12 +273,24 @@ void FViewportsPanel::OnRender() {
 		ImGui::SameLine();
 		// 장면 채우기 모드 설정
 		int Mode = static_cast<int>(Client->GetViewportMode());
-		const char *Labels[] = {"Solid", "Wireframe", "Scene Depth"};
+		const char *Labels[] = {"Unlit", "Lit", "Wireframe", "Scene Depth"};
 		ImGui::SetNextItemWidth(120.0f);
 		if (ImGui::Combo("##FillMode", &Mode, Labels, IM_ARRAYSIZE(Labels))) {
 			Client->SetViewportMode(static_cast<EViewportMode>(Mode));
 		}
 		ImGui::SameLine();
+		
+		if (Client->GetViewportMode() == EViewportMode::Lit) {
+			int Shading = static_cast<int>(Client->GetShadingModel());
+			const char* ShadingLabels[] = { "Lambert", "Phong", "Blinn-Phong", "Gouraud" };
+			ImGui::SetNextItemWidth(120.0f);
+			if (ImGui::Combo("##ShadingModel", &Shading, ShadingLabels,
+				IM_ARRAYSIZE(ShadingLabels))) {
+				Client->SetShadingModel(static_cast<EShadingModel>(Shading));
+			}
+			ImGui::SameLine();
+		}
+
 		if (CurrentLayoutMode == ELayoutMode::QuadSplit) {
 			if (ImGui::SmallButton("Single")) {
 				RequestedLayoutMode = ELayoutMode::Single;
