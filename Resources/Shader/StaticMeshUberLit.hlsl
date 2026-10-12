@@ -150,11 +150,11 @@ float3 Specular(float3 Ks, float3 N, float3 L, float3 V, float Shininess)
 
 float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 View)
 {
-	float3 FinalColor = Albedo;
-	
 #if LIGHTING_ENABLED == 0
-	return FinalColor;
+	return Albedo;
 #endif
+	
+	float3 FinalColor = AmbientLight.Color * AmbientLight.Intensity * Albedo;
 	
 	for (uint i = 0; i < NumDirectionalLights; ++i)
 	{
