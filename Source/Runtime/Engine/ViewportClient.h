@@ -15,14 +15,6 @@ enum class ELevelViewportType : uint8
 	Right
 };
 
-enum class EViewportMode : uint8
-{
-	Solid,
-	Wireframe,
-	SceneDepth,
-	None
-};
-
 // 뷰포트 클라이언트 인터페이스
 class FViewportClient
 {

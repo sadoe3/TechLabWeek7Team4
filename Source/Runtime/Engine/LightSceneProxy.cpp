@@ -16,9 +16,8 @@ void FLightSceneProxy::Update()
 
 	// 모든 광원에 공통으로 필요한 값을 먼저 갱신한다.
 	LightType = Component->GetLightType();
-	const FVector4& Color = Component->GetLightColor();
+	const FVector& Color = Component->GetLightColor();
 	const float Intensity = std::max(0.0f, Component->GetIntensity());
-	RenderData.ColorIntensity = FVector4(std::max(0.0f, Color.X), std::max(0.0f, Color.Y), std::max(0.0f, Color.Z), Intensity);
 
 	bEnabled = Component->IsEnabled() && Intensity > 0.0f;
 	bVisible = Component->IsVisible();
@@ -26,6 +25,23 @@ void FLightSceneProxy::Update()
 
 	switch (LightType)
 	{
+	case ELightType::Ambient:
+	{
+		RenderData = FAmbientLightRenderData{ Color, Intensity };
+		break;
+	}
+	case ELightType::Directional:
+	{
+		auto* Light = Cast<UDirectionalLightComponent>(Component);
+		if (!Light)
+		{
+			bEnabled = false;
+			return;
+		}
+
+		RenderData = FDirectionalLightRenderData{ Color, Intensity, Light->GetLightDirection() };
+		break;
+	}
 	case ELightType::Point:
 	{
 		auto* Light = Cast<UPointLightComponent>(Component);
@@ -38,7 +54,7 @@ void FLightSceneProxy::Update()
 
 		const FVector Position = Component->GetWorldLocation();
 		const float Radius = std::max(0.0f, Light->GetAttenuationRadius());
-		RenderData.PositionRadius = FVector4(Position.X, Position.Y, Position.Z, Radius);
+		RenderData = FPointLightRenderData{ Color, Intensity, Position, Radius };
 		bEnabled = bEnabled && Radius > 0.0f;
 		break;
 	}
@@ -53,31 +69,8 @@ void FLightSceneProxy::Update()
 
 		const FVector Position = Light->GetWorldLocation();
 		const float Radius = std::max(0.0f, Light->GetAttenuationRadius());
-		RenderData.PositionRadius = FVector4(Position.X, Position.Y, Position.Z, Radius);
-		Direction = Light->GetLightDirection();
-		InnerConeAngle = Light->GetInnerConeAngle();
-		OuterConeAngle = Light->GetOuterConeAngle();
-		Falloff = Light->GetFalloff();
+		RenderData = FSpotLightRenderData{ Color, Intensity, Position, Radius, Light->GetLightDirection(), Light->GetInnerConeAngle() * PI / 180.0f, Light->GetOuterConeAngle() * PI / 180.0f, Light->GetFalloff() };
 		bEnabled = bEnabled && Radius > 0.0f;
-		break;
-	}
-	case ELightType::Directional:
-	{
-		auto* Light = Cast<UDirectionalLightComponent>(Component);
-		if (!Light)
-		{
-			bEnabled = false;
-			return;
-		}
-
-		Direction = Light->GetLightDirection();
-		RenderData.PositionRadius = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
-		break;
-	}
-	case ELightType::Ambient:
-	{
-		// 공통 정보만 사용하므로 자식 타입으로 캐스팅할 필요가 없다.
-		RenderData.PositionRadius = FVector4(0.0f, 0.0f, 0.0f, 0.0f);
 		break;
 	}
 	}

@@ -41,7 +41,8 @@ struct FSceneView
 
 	// 렌더링 플래그
 	bool bIsPerspective = true;
-	bool bIsWireframe = false;
+	EViewportMode ViewMode = EViewportMode::Lit;
+	EShadingModel ShadingModel = EShadingModel::BlinnPhong;
 	bool bGameView = false;
 
 	// 기존 뷰 컨텍스트 변환

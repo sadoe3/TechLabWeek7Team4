@@ -24,7 +24,7 @@ float4 mainPS(FPSInput Input) : SV_Target
     // 밝은 부분을 부드럽게 압축하는 ACES 근사 톤 매핑.
     float3 Mapped = (HDR * (2.51f * HDR + 0.03f)) /
         (HDR * (2.43f * HDR + 0.59f) + 0.14f);
-    // SceneColor는 UNORM이므로 화면에 표시할 sRGB 근사값으로 변환한다.
-    float3 DisplayColor = pow(saturate(Mapped), 1.0f / 2.2f);
+    
+    float3 DisplayColor = saturate(Mapped);
     return float4(DisplayColor, 1.0f);
 }

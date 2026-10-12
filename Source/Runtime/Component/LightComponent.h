@@ -25,8 +25,8 @@ class ULightComponent : public USceneComponent
 public:
 	virtual ELightType GetLightType() const = 0;
 	virtual void DrawDebug(FLineBatcher* LineBatcher) const {}
-	const FVector4& GetLightColor() const { return LightColor; }
-	void SetLightColor(const FVector4& InColor) { LightColor = InColor; OnPropertyChanged("LightColor"); }
+	const FVector& GetLightColor() const { return LightColor; }
+	void SetLightColor(const FVector& InColor) { LightColor = InColor; OnPropertyChanged("LightColor"); }
 	float GetIntensity() const { return Intensity; }
 	void SetIntensity(float InIntensity) { Intensity = InIntensity; OnPropertyChanged("Intensity"); }
 	bool IsEnabled() const { return bEnabled; }
@@ -46,7 +46,7 @@ protected:
 	void CreateRenderState() override;
 	void DestroyRenderState() override;
 
-	FVector4 LightColor{1.0f, 1.0f, 1.0f, 1.0f};
+	FVector LightColor{1.0f, 1.0f, 1.0f};
 	float Intensity = 1.0f;
 	bool bEnabled = true;
 	bool bShowLightBounds = true;

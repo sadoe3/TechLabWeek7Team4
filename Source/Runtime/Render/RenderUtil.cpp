@@ -1,7 +1,7 @@
 #include "EnginePCH.h"
 #include "RenderUtil.h"
 
-FShaderByteCode RenderUtil::CompileShader(FString Path, const char* EntryPoint, EShaderType ShaderType)
+FShaderByteCode RenderUtil::CompileShader(FString Path, const char* EntryPoint, EShaderType ShaderType, const TArray<FShaderMacro>& Macros)
 {
 	const char* Target = (ShaderType == EShaderType::Vertex) ? "vs_5_0" : "ps_5_0";
 
@@ -10,12 +10,19 @@ FShaderByteCode RenderUtil::CompileShader(FString Path, const char* EntryPoint, 
 	Flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
+	TArray<D3D_SHADER_MACRO> D3DMacros;
+	for (const FShaderMacro& Macro : Macros)
+	{
+		D3DMacros.Add({ Macro.Name.c_str(), Macro.Value.c_str() });
+	}
+	D3DMacros.Add({ nullptr, nullptr });
+
 	FShaderByteCode ByteCode;
 
 	std::wstring WPath(Path.begin(), Path.end());
 
 	ComPtr<ID3DBlob> ErrorBlob;
-	HRESULT hr = D3DCompileFromFile(WPath.c_str(), nullptr, nullptr, EntryPoint, Target, 0, 0, ByteCode.Blob.GetAddressOf(), ErrorBlob.GetAddressOf());
+	HRESULT hr = D3DCompileFromFile(WPath.c_str(), D3DMacros.GetData(), nullptr, EntryPoint, Target, Flags, 0, ByteCode.Blob.GetAddressOf(), ErrorBlob.GetAddressOf());
 
 	if (FAILED(hr))
 	{
@@ -56,13 +63,23 @@ FShaderByteCode RenderUtil::LoadByteCode(const FString& CsoPath)
 	return Result;
 }
 
-FString RenderUtil::GetCsoPath(const FString& ShaderPath, EShaderType ShaderType)
+FString RenderUtil::MakeMacroKey(const TArray<FShaderMacro>& Macros)
+{
+	FString MacroStr;
+	for (const FShaderMacro& Macro : Macros)
+	{
+		MacroStr += "_" + Macro.Name + "_" + Macro.Value;
+	}
+	return MacroStr;
+}
+
+FString RenderUtil::GetCsoPath(const FString& ShaderPath, EShaderType ShaderType, const TArray<FShaderMacro>& Macros)
 {
 	const fs::path Rel = fs::relative(ShaderPath, "Resources/Shader");
 	const char* Suffix = (ShaderType == EShaderType::Vertex) ? "_VS.cso" : "_PS.cso";
 
 	fs::path Out = fs::path("Intermediate/Shaders") / Rel.parent_path();
-	Out /= Rel.stem().generic_string() + Suffix;
+	Out /= Rel.stem().generic_string() + MakeMacroKey(Macros) + Suffix;
 	return Out.generic_string();
 }
 
@@ -80,9 +97,9 @@ bool RenderUtil::IsCsoUpToDate(const FString& ShaderPath, const FString& CsoPath
 	return CsoTime > SrcTime;
 }
 
-FShaderByteCode RenderUtil::GetOrCompile(const FString& ShaderPath, const char* EntryPoint, EShaderType ShaderType, FString& OutCSOPath)
+FShaderByteCode RenderUtil::GetOrCompile(const FString& ShaderPath, const char* EntryPoint, EShaderType ShaderType, FString& OutCSOPath, const TArray<FShaderMacro>& Macros)
 {
-	OutCSOPath = GetCsoPath(ShaderPath, ShaderType);
+	OutCSOPath = GetCsoPath(ShaderPath, ShaderType, Macros);
 
 	if (IsCsoUpToDate(ShaderPath, OutCSOPath))
 	{
@@ -90,7 +107,7 @@ FShaderByteCode RenderUtil::GetOrCompile(const FString& ShaderPath, const char* 
 		if (Cached.IsValid()) return Cached;
 	}
 
-	FShaderByteCode Compiled = CompileShader(ShaderPath, EntryPoint, ShaderType);
+	FShaderByteCode Compiled = CompileShader(ShaderPath, EntryPoint, ShaderType, Macros);
 	if (Compiled.IsValid())
 		SaveByteCode(OutCSOPath, Compiled);
 

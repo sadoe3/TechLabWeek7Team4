@@ -1025,7 +1025,7 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	if (!ViewClient || !SettingsPanel) return;
 	FSceneRenderOptions Options;
 	Options.bDrawPrimitives = bIsPIE || SettingsPanel->GetSettings().bDrawPrimitives;
-	Options.bEnableFog = ViewClient->GetViewportMode() == EViewportMode::Solid;
+	Options.bEnableFog = ViewClient->GetViewportMode() == EViewportMode::Lit;
 	Options.bEnableFXAA = SettingsPanel->GetSettings().bEnableFXAA;
 	Options.bShowSceneDepth = !bIsPIE && ViewClient->IsSceneDepth();
 	Options.SceneDepthRange = ViewClient->GetMaxRange();

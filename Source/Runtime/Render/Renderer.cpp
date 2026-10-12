@@ -19,6 +19,8 @@
 #include <unordered_map>
 #include <bit>
 
+#include "SceneRenderData.h"
+
 DECLARE_CYCLE_STAT("Draw Render Packets", STAT_DrawRenderPackets);
 
 namespace
@@ -29,13 +31,28 @@ namespace
 		FVector4 CameraPosition; // W: perspective projection
 		FVector4 CameraForward;
 		FVector4 ViewportLightCount;
-		FPointLightRenderData PointLights[MaxDeferredPointLights];
+		FPointLightRenderData PointLights[MaxPointLights];
 	};
 	static_assert(sizeof(FPointLightRenderData) == 32);
 	static_assert(sizeof(FDeferredLightConstants) % 16 == 0);
 	// VSSetConstantBuffers1의 오프셋은 16개 상수(256바이트) 단위여야 하므로 오브젝트마다 256바이트 칸을 쓴다.
 	constexpr uint32 PerObjectSlotConstants = 16;
 	static_assert(sizeof(FPerObjectConstants) <= ObjectSlotBytes);
+
+	struct FFrameConstants
+	{
+		FMatrix VP;
+		FVector CameraPosition;
+		uint32 NumDirectionalLights;
+		uint32 NumPointLights;
+		uint32 NumSpotLights;
+		float Padding[2];
+		FAmbientLightRenderData AmbientLight;
+		FDirectionalLightRenderData DirectionalLights[MaxDirectionalLights];
+		FPointLightRenderData PointLights[MaxPointLights];
+		FSpotLightRenderData SpotLights[MaxSpotLights];
+	};
+	static_assert(sizeof(FFrameConstants) % 16 == 0);
 
 	constexpr uint32 MinPerObjectSlots = 1024;
 
@@ -52,13 +69,34 @@ namespace
 			| (static_cast<uint64>(Group.Mesh->SortID) << 31)
 			| (static_cast<uint64>(Group.LODIndex & 0x3) << 29);
 	}
+
+	TArray<FShaderMacro> MakeShadingModelMacro(EShadingModel ShadingModel)
+	{
+		TArray<FShaderMacro> Macros;
+		switch (ShadingModel)
+		{
+		case EShadingModel::Lambert:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_LAMBERT" });
+			break;
+		case EShadingModel::Phong:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_PHONG" });
+			break;
+		case EShadingModel::BlinnPhong:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_BLINN_PHONG" });
+			break;
+		case EShadingModel::Gouraud:
+			Macros.Add({ "SHADING_MODEL", "SHADING_MODEL_GOURAUD" });
+			break;
+		}
+		return Macros;
+	}
 }
 
 bool FRenderer::Init()
 {
 	bUsePerObjectSlots = RenderCommand::SupportsConstantBufferOffsets();
 	PerObjectCB = RenderCommand::CreateConstantBuffer(sizeof(FPerObjectConstants));
-	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FMatrix));
+	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FFrameConstants));
 	DeferredLightCB = RenderCommand::CreateConstantBuffer(sizeof(FDeferredLightConstants));
 
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
@@ -88,10 +126,37 @@ void FRenderer::EnsurePerObjectSlotCapacity(uint32 SlotCount)
 }
 
 // 시점 상수 버퍼 및 렌더링 상태 설정
-void FRenderer::SetupView(const FSceneView& View)
+void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights)
 {
-	bCurrentWireframe = View.bIsWireframe;
-	RenderCommand::UpdateBufferData(ViewCB.get(), &View.ViewProjectionMatrix);
+	bCurrentWireframe = View.ViewMode == EViewportMode::Wireframe;
+	FFrameConstants Constants{
+		.VP = View.ViewProjectionMatrix,
+		.CameraPosition = View.ViewLocation,
+	};
+	if (Lights)
+	{
+		Constants.NumDirectionalLights = Lights->DirectionalLights.Num();
+		Constants.NumPointLights = Lights->PointLights.Num();
+		Constants.NumSpotLights = Lights->SpotLights.Num();
+		Constants.AmbientLight = Lights->AmbientLight;
+		for (uint32 i = 0; i < Constants.NumDirectionalLights; ++i)
+			Constants.DirectionalLights[i] = Lights->DirectionalLights[i];
+		for (uint32 i = 0; i < Constants.NumPointLights; ++i)
+			Constants.PointLights[i] = Lights->PointLights[i];
+		for (uint32 i = 0; i < Constants.NumSpotLights; ++i)
+			Constants.SpotLights[i] = Lights->SpotLights[i];
+	}
+
+	if (View.ViewMode == EViewportMode::Unlit)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { {"LIGHTING_ENABLED", "0"} });
+	else if (View.ViewMode == EViewportMode::Lit)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, MakeShadingModelMacro(View.ShadingModel));
+	else if (View.ViewMode == EViewportMode::Wireframe)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Wireframe, MakeShadingModelMacro(View.ShadingModel));
+	else if (View.ViewMode == EViewportMode::SceneDepth)
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { {"LIGHTING_ENABLED", "0"} });
+
+	RenderCommand::UpdateBufferData(ViewCB.get(), &Constants);
 }
 
 // 전체 렌더 큐 렌더링
@@ -102,9 +167,9 @@ void FRenderer::RenderAll(const FSceneView& View, const FRenderQueue& InQueue)
 }
 
 // 불투명 요소 렌더링
-void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, bool bGBufferPass)
+void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights, bool bGBufferPass)
 {
-	SetupView(View);
+	SetupView(View, Lights);
 	DrawStaticGroups(bGBufferPass);
 	DrawPackets(InQueue, 0, InQueue.GetFirstTranslucentIndex(), View.ViewProjectionMatrix, bGBufferPass);
 }
@@ -120,7 +185,7 @@ void FRenderer::DrawDeferredLighting(const FSceneView& View, const FDeferredView
 	Constants.CameraPosition = FVector4(View.ViewLocation.X, View.ViewLocation.Y,
 		View.ViewLocation.Z, View.bIsPerspective ? 1.0f : 0.0f);
 	Constants.CameraForward = FVector4(View.ViewForward.X, View.ViewForward.Y, View.ViewForward.Z, 0.0f);
-	const uint32 LightCount = std::min<uint32>(static_cast<uint32>(PointLights.Num()), MaxDeferredPointLights);
+	const uint32 LightCount = std::min<uint32>(static_cast<uint32>(PointLights.Num()), MaxPointLights);
 	Constants.ViewportLightCount = FVector4(
 		static_cast<float>(Targets.SceneColor->GetWidth()),
 		static_cast<float>(Targets.SceneColor->GetHeight()),
@@ -167,9 +232,9 @@ void FRenderer::DrawToneMap(FTexture2D* LightingHDR, FTexture2D* Depth)
 }
 
 // 반투명 요소 렌더링
-void FRenderer::RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue)
+void FRenderer::RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights)
 {
-	SetupView(View);
+	SetupView(View, Lights);
 	DrawPackets(InQueue, InQueue.GetFirstTranslucentIndex(), InQueue.Num(), View.ViewProjectionMatrix);
 	StaticGroups.clear();
 }
@@ -186,7 +251,7 @@ void FRenderer::DrawStaticGroups(bool bGBufferPass)
 		[](const FStaticDrawGroup* A, const FStaticDrawGroup* B) { return MakeGroupKey(*A) < MakeGroupKey(*B); });
 
 	SCOPE_CYCLE_COUNTER(STAT_DrawRenderPackets);
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 	UMaterial* BoundMaterial = nullptr;
 	for (const FStaticDrawGroup* Group : StaticGroups)
@@ -227,7 +292,7 @@ void FRenderer::DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 En
 	UMaterial* LastMaterial = nullptr;
 	uint8 LastLODIndex = 0;
 
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 	for (uint32 k = Begin; k < End; ++k)
 	{
@@ -323,7 +388,7 @@ FOcclusionMeasureResult FRenderer::MeasureOpaqueOcclusion(const FMatrix& ViewPro
 		OcclusionQueries.Add(std::move(Query));
 	}
 
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 	if (!bUsePerObjectSlots)
 		RenderCommand::BindConstantBuffer(2, PerObjectCB.get(), EShaderBindFlagBits::Vertex);
 
@@ -435,22 +500,32 @@ void FRenderer::EndObjectConstants()
 void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, bool bGBufferPass)
 {
 	EPSOType PSOType = material->PSOType;
-	if (bGBufferPass && PSOType == EPSOType::StaticMesh_Opaque)
-	{
-		PSOType = EPSOType::StaticMesh_GBuffer;
-	}
-	else if (bInWireframe && PSOType == EPSOType::StaticMesh_Opaque)
-	{
-		PSOType = EPSOType::StaticMesh_Wireframe;
-	}
 
-	if (FPipelineState* PSO = FRenderResourceManager::GetPSO(PSOType))
+	if (PSOType == EPSOType::StaticMesh_Opaque)
 	{
-		RenderCommand::BindPipelineState(*PSO);
+		if (bGBufferPass)
+		{
+			if (FPipelineState* PSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_GBuffer))
+			{
+				RenderCommand::BindPipelineState(*PSO);
 
-		if (bGBufferPass && bInWireframe)
-			RenderCommand::SetRasterizerState(ERasterizerState::Wireframe);
+				if (bInWireframe)
+					RenderCommand::SetRasterizerState(ERasterizerState::Wireframe);
+			}
+		}
+		else
+		{
+			RenderCommand::BindPipelineState(*CurrentOpaquePSO);
+		}
 	}
+	else
+	{
+		if (FPipelineState* PSO = FRenderResourceManager::GetPSO(PSOType))
+		{
+			RenderCommand::BindPipelineState(*PSO);
+		}
+	}
+	
 	// 텍스처와 샘플러 바인딩
 	for (size_t i = 0; i < material->Textures.size(); i++)
 	{

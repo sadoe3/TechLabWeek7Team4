@@ -6,8 +6,10 @@ Texture2D<float> SceneDepth : register(t2);
 
 struct FPointLightData
 {
-    float4 PositionRadius;
-    float4 ColorIntensity;
+    float3 Color;
+    float Intensity;
+    float3 Location;
+    float AttenuationRadius;
 };
 
 cbuffer DeferredLightConstants : register(b0)
@@ -106,9 +108,9 @@ float4 mainPS(FPSInput Input) : SV_Target
     for (uint Index = 0; Index < (uint)ViewportLightCount.z; ++Index)
     {
         FPointLightData Light = PointLights[Index];
-        float3 ToLight = Light.PositionRadius.xyz - WorldPosition;
+        float3 ToLight = Light.Location - WorldPosition;
         float DistanceSquared = dot(ToLight, ToLight);
-        float RadiusSquared = Light.PositionRadius.w * Light.PositionRadius.w;
+        float RadiusSquared = Light.AttenuationRadius * Light.AttenuationRadius;
         if (RadiusSquared <= 0.0f || DistanceSquared >= RadiusSquared || DistanceSquared < 1.0e-8f) continue;
 
         float Distance = sqrt(max(DistanceSquared, 1.0e-6f));
@@ -116,7 +118,7 @@ float4 mainPS(FPSInput Input) : SV_Target
         float RadiusFade = saturate(1.0f - DistanceSquared / RadiusSquared);
         float Attenuation = RadiusFade * RadiusFade / (1.0f + DistanceSquared);
         float3 SurfaceResponse = EvaluateSurfaceBRDF(Albedo, Metallic, Roughness, N, V, L);
-        float3 LightRadiance = Light.ColorIntensity.rgb * Light.ColorIntensity.a * Attenuation;
+        float3 LightRadiance = Light.Color * Light.Intensity * Attenuation;
         PointLighting += SurfaceResponse * LightRadiance;
     }
 

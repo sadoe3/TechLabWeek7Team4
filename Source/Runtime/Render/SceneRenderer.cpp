@@ -41,28 +41,47 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 
 	for (const FLightSceneProxy* Light : World->GetScene().GetLights()) // 월드에 있는 모든 라이트 정보 가져오기
 	{
-		// 현재 렌더링 데이터와 컬링 경로는 PointLight 전용이다.
-		if (Light->GetLightType() != ELightType::Point) continue;
-		if (!Light->IsEnabled() || !Light->IsShown(View.bGameView)) continue;
-		const FPointLightRenderData& Data = Light->GetRenderData();
-		const float Radius = Data.PositionRadius.W;
-		bool bInView = true;
-		for (const FPlane& Plane : View.Frustum.Planes)
+		if (!Light || !Light->IsEnabled() || !Light->IsShown(View.bGameView)) continue;
+		const auto& Data = Light->GetRenderData();
+
+		// TODO: 라이트 컬링
+
+		switch (Light->GetLightType())
 		{
-			const float Distance = Plane.Normal.X * Data.PositionRadius.X +
-				Plane.Normal.Y * Data.PositionRadius.Y +
-				Plane.Normal.Z * Data.PositionRadius.Z + Plane.Distance;
-			const float NormalLength = std::sqrt(Plane.Normal.X * Plane.Normal.X +
-				Plane.Normal.Y * Plane.Normal.Y + Plane.Normal.Z * Plane.Normal.Z);
-			if (Distance < -Radius * NormalLength)
+		case ELightType::Ambient:
+		{
+			if (RenderData.FrameLightData.AmbientLight.Intensity > 0.0f) continue;
+			if (const auto* AmbientData = std::get_if<FAmbientLightRenderData>(&Data))
 			{
-				bInView = false;
-				break;
+				RenderData.FrameLightData.AmbientLight = *AmbientData;
+			}
+			break;
+		}
+		case ELightType::Directional:
+		{
+			if (static_cast<uint32>(RenderData.FrameLightData.DirectionalLights.Num()) >= MaxDirectionalLights) continue;
+			if (const auto* DirectionalData = std::get_if<FDirectionalLightRenderData>(&Data))
+			{
+				RenderData.FrameLightData.DirectionalLights.Add(*DirectionalData);
 			}
 		}
-		if (!bInView) continue;
-		if (RenderData.VisiblePointLights.Num() >= MaxDeferredPointLights) break;
-		RenderData.VisiblePointLights.Add(Data);
+		case ELightType::Point:
+		{
+			if (static_cast<uint32>(RenderData.FrameLightData.PointLights.Num()) >= MaxPointLights) continue;
+			if (const auto* PointData = std::get_if<FPointLightRenderData>(&Data))
+			{
+				RenderData.FrameLightData.PointLights.Add(*PointData);
+			}
+		}
+		case ELightType::Spot:
+		{
+			if (static_cast<uint32>(RenderData.FrameLightData.SpotLights.Num()) >= MaxSpotLights) continue;
+			if (const auto* SpotData = std::get_if<FSpotLightRenderData>(&Data))
+			{
+				RenderData.FrameLightData.SpotLights.Add(*SpotData);
+			}
+		}
+		}
 	}
 }
 
@@ -72,7 +91,7 @@ bool FSceneRenderer::RenderGBuffer(FRenderer* Renderer, const FDeferredViewTarge
 		return false;
 
 	PrepareDrawData(Renderer, RenderData);
-	Renderer->RenderOpaque(View, RenderData.RenderQueue, true);
+	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, true);
 	RenderCommand::EndRenderPass();
 	return true;
 }
@@ -80,7 +99,7 @@ bool FSceneRenderer::RenderGBuffer(FRenderer* Renderer, const FDeferredViewTarge
 void FSceneRenderer::RenderDeferredLighting(FRenderer* Renderer, const FDeferredViewTargets& Targets)
 {
 	if (Renderer)
-		Renderer->DrawDeferredLighting(View, Targets, RenderData.VisiblePointLights);
+		Renderer->DrawDeferredLighting(View, Targets, RenderData.FrameLightData.PointLights);
 }
 
 void FSceneRenderer::RenderToneMapDeferred(FRenderer* Renderer, const FDeferredViewTargets& Targets)
@@ -96,7 +115,7 @@ void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardView
 
 	RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
 	PrepareDrawData(Renderer, RenderData);
-	Renderer->RenderOpaque(View, RenderData.RenderQueue);
+	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData);
 	RenderCommand::EndRenderPass();
 }
 
@@ -116,7 +135,7 @@ void FSceneRenderer::RenderTranslucent(FRenderer* Renderer, FConstantBuffer* Fog
 
 	RenderCommand::BindConstantBuffer(3, FogConstants, EShaderBindFlagBits::Pixel);
 	PrepareDrawData(Renderer, RenderData);
-	Renderer->RenderTranslucent(View, RenderData.RenderQueue);
+	Renderer->RenderTranslucent(View, RenderData.RenderQueue, &RenderData.FrameLightData);
 	RenderCommand::BindConstantBuffer(3, nullptr, EShaderBindFlagBits::Pixel);
 }
 

@@ -20,6 +20,14 @@ struct FRenderStats
 	void Reset() { *this = FRenderStats(); }
 };
 
+struct FFrameLightData
+{
+	FAmbientLightRenderData AmbientLight{};
+	TArray<FDirectionalLightRenderData> DirectionalLights;
+	TArray<FPointLightRenderData> PointLights;
+	TArray<FSpotLightRenderData> SpotLights;
+};
+
 // Persistent storage for one view. SceneRenderer borrows it for the current frame.
 struct FSceneRenderData
 {
@@ -41,7 +49,7 @@ struct FSceneRenderData
 	TArray<uint8> SelectedLODs;
 	TArray<FGatherChunk> GatherChunks;
 	TArray<FPerObjectConstants> ObjectConstants;
-	TArray<FPointLightRenderData> VisiblePointLights;
+	FFrameLightData FrameLightData;
 
 	void ResetScene()
 	{
@@ -61,7 +69,10 @@ struct FSceneRenderData
 		LODInputs.Reset();
 		SelectedLODs.Reset();
 		ObjectConstants.Reset();
-		VisiblePointLights.Reset();
+		FrameLightData.AmbientLight = {};
+		FrameLightData.DirectionalLights.Reset();
+		FrameLightData.PointLights.Reset();
+		FrameLightData.SpotLights.Reset();
 		for (FGatherChunk& Chunk : GatherChunks)
 		{
 			Chunk.Packets.Reset();

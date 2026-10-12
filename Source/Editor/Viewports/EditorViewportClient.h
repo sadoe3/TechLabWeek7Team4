@@ -104,10 +104,12 @@ public:
 	virtual FTexture2D* GetDepthTarget() const = 0;
 	FSceneRenderData& GetRenderData() { return RenderData; }
 
-	bool IsWireframe() const { return ViewportMode == EViewportMode::Wireframe; }
-	bool IsSceneDepth() const { return ViewportMode == EViewportMode::SceneDepth; }
-	EViewportMode GetViewportMode() const { return ViewportMode; }
-	void SetViewportMode(const EViewportMode InViewportMode) { ViewportMode = InViewportMode; }
+	bool IsWireframe() const { return ViewMode == EViewportMode::Wireframe; }
+	bool IsSceneDepth() const { return ViewMode == EViewportMode::SceneDepth; }
+	EViewportMode GetViewportMode() const { return ViewMode; }
+	void SetViewportMode(const EViewportMode InViewportMode) { ViewMode = InViewportMode; }
+	EShadingModel GetShadingModel() const { return ShadingModel; }
+	void SetShadingModel(const EShadingModel InShadingModel) { ShadingModel = InShadingModel; }
 	float GetMaxRange() const { return MaxRange; }
 	void SetMaxRange(float InMaxRange) { MaxRange = InMaxRange; }
 
@@ -121,7 +123,8 @@ protected:
 	bool bIsPerspective = true;
 	bool bIsRealtime = true;
 	bool bActive = false;
-	EViewportMode ViewportMode = EViewportMode::Solid;
+	EViewportMode ViewMode = EViewportMode::Lit;
+	EShadingModel ShadingModel = EShadingModel::BlinnPhong;
 
 	FRect Rect{};
 	uint32 Width = 0;

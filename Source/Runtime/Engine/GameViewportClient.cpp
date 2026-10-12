@@ -151,7 +151,8 @@ FSceneView FGameViewportClient::CalcSceneView(const FRect& InViewRect)
 		OutView.FarClip = CameraComponent->GetFarZ();
 		OutView.OrthoWidth = CameraComponent->GetOrthoWidth();
 		OutView.bIsPerspective = !CameraComponent->GetIsOrthogonal();
-		OutView.bIsWireframe = false;
+		OutView.ViewMode = EViewportMode::Lit;
+		OutView.ShadingModel = EShadingModel::BlinnPhong;
 	}
 	else
 	{
@@ -164,7 +165,8 @@ FSceneView FGameViewportClient::CalcSceneView(const FRect& InViewRect)
 		OutView.NearClip = 0.1f;
 		OutView.FarClip = 1000.0f;
 		OutView.bIsPerspective = true;
-		OutView.bIsWireframe = false;
+		OutView.ViewMode = EViewportMode::Lit;
+		OutView.ShadingModel = EShadingModel::BlinnPhong;
 	}
 
 	// 절두체 평면 계산
