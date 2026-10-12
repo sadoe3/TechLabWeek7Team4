@@ -3,15 +3,18 @@
 #include <d3d11_1.h>
 #include "RenderStates.h"
 
+class FBuffer;
 class FVertexBuffer;
 class FShader;
 class FVertexShader;
 class FPixelShader;
+class FComputeShader;
 class FShaderProgram;
 struct FShaderByteCode;
 struct FImageData;
 class FIndexBuffer;
 class FConstantBuffer;
+class FStructuredBuffer;
 class FTexture2D;
 class FTextureCube;
 struct FPipelineState;
@@ -35,7 +38,9 @@ public:
 	TUniquePtr<FVertexBuffer> CreateDynamicVertexBuffer(uint32 MaxSize, uint32 Stride);
 	TUniquePtr<FIndexBuffer> CreateDynamicIndexBuffer(uint32 MaxIndexCount);
 
+	TUniquePtr<FBuffer> CreateBuffer(const D3D11_BUFFER_DESC& Desc, const void* InitialData = nullptr);
 	TUniquePtr<FConstantBuffer> CreateConstantBuffer(uint32 BufferSize);
+	TUniquePtr<FStructuredBuffer> CreateStructuredBuffer(uint32 ElementCount, uint32 ElementStride, D3D11_USAGE Usage, bool bAllowUAV, const void* InitialData = nullptr);
 
 	TUniquePtr<FTexture2D> CreateTexture2D(const D3D11_TEXTURE2D_DESC& Desc, const void* InitialData);
 	TUniquePtr<FTexture2D> CreateTexture2D(const D3D11_TEXTURE2D_DESC& Desc, const FImageData& Image);
@@ -43,6 +48,7 @@ public:
 
 	TUniquePtr<FVertexShader> CreateVertexShader(const FShaderByteCode& ByteCode);
 	TUniquePtr<FPixelShader> CreatePixelShader(const FShaderByteCode& ByteCode);
+	TUniquePtr<FComputeShader> CreateComputeShader(const FShaderByteCode& ByteCode);
 
 	TUniquePtr<FShaderProgram> CreateShader(const wchar_t* FileName, D3D11_INPUT_ELEMENT_DESC* InLayoutDesc, size_t InLayoutSize);
 

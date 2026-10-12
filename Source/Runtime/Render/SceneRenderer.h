@@ -36,7 +36,8 @@ public:
 	void RenderToneMapDeferred(FRenderer* Renderer, const FDeferredViewTargets& Targets);
 
 	// 불투명 Forward 렌더링
-	void RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height);
+	bool CullLights(FRenderer* Renderer, FForwardViewTargets& Targets, uint32 Width, uint32 Height);
+	void RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height, bool bUseTileLights = false);
 	void RenderToneMapForward(FRenderer* Renderer, const FForwardViewTargets& Targets);
 
 	// 반투명 렌더링

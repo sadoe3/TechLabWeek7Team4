@@ -8,6 +8,7 @@ class UTexture2D;
 class FShaderProgram;
 class FVertexShader;
 class FPixelShader;
+class FComputeShader;
 struct FDeferredViewTargets;
 
 enum class EShaderBindFlagBits : uint32
@@ -34,7 +35,9 @@ public:
 	static TUniquePtr<FIndexBuffer> CreateStaticIndexBuffer(const uint32* InIndices, uint32 MaxIndexCount);
 	static TUniquePtr<FIndexBuffer> CreateDynamicIndexBuffer(uint32 MaxIndexCount);
 
+	static TUniquePtr<FBuffer> CreateBuffer(const D3D11_BUFFER_DESC& Desc, const void* InitialData = nullptr);
 	static TUniquePtr<FConstantBuffer> CreateConstantBuffer(uint32 BufferSize);
+	static TUniquePtr<FStructuredBuffer> CreateStructuredBuffer(uint32 ElementCount, uint32 ElementStride, D3D11_USAGE Usage, bool bAllowUAV, const void* InitialData = nullptr);
 
 	static TUniquePtr<FTexture2D> CreateTexture2D(const D3D11_TEXTURE2D_DESC& Desc, const void* InitialData = nullptr);
 	static TUniquePtr<FTexture2D> CreateTexture2D(const D3D11_TEXTURE2D_DESC& Desc, const FImageData& Image);
@@ -42,6 +45,7 @@ public:
 
 	static TUniquePtr<FVertexShader> CreateVertexShader(const FShaderByteCode& ByteCode);
 	static TUniquePtr<FPixelShader> CreatePixelShader(const FShaderByteCode& ByteCode);
+	static TUniquePtr<FComputeShader> CreateComputeShader(const FShaderByteCode& ByteCode);
 
 	static void BindPipelineState(const FPipelineState& PipelineState);
 
@@ -74,6 +78,7 @@ public:
 	static void Unmap(FBuffer* InBuffer);
 	static void BindShaderResource(uint32 Slot, FTexture2D* Texture2D, EShaderBindFlagBits FlagBits);
 	static void BindShaderResource(uint32 Slot, UTexture2D* Texture2D, EShaderBindFlagBits FlagBits);
+	static void BindShaderResource(uint32 Slot, ID3D11ShaderResourceView* SRV, EShaderBindFlagBits FlagBits);
 	static void UnbindShaderResources(uint32 FirstSlot, uint32 Count, EShaderBindFlagBits FlagBits);
 
 	static void BeginRenderPass(FTexture2D* ColorTarget, FTexture2D* DepthTarget, uint32 Width, uint32 Height);
@@ -89,6 +94,10 @@ public:
 	static void SetBlendState(EBlendState State);
 	static void SetDepthStencilState(EDepthStencilState State);
 	static void BindSamplerState(uint32 Slot, ESamplerState SamplerState, EShaderBindFlagBits FlagBits);
+
+	// 컴퓨트 셰이더의 UAV 슬롯에 연결. nullptr이면 해제.
+	static void BindComputeUAV(uint32 Slot, ID3D11UnorderedAccessView* UAV);
+	static void Dispatch(uint32 GroupCountX, uint32 GroupCountY, uint32 GroupCountZ);
 
 	inline static void SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY Topology)
 	{

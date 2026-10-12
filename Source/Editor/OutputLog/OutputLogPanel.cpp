@@ -2,6 +2,7 @@
 #include "Editor/OutputLog/OutputLogPanel.h"
 
 #include "Core/StatOverlay.h"
+#include <sstream>
 
 static int TextEditCallbackStub(ImGuiInputTextCallbackData* data)
 {
@@ -25,6 +26,7 @@ bool FOutputLogPanel::Init()
 	Commands.Add("HISTORY");
 	Commands.Add("CLEAR");
 	Commands.Add("STAT");
+	Commands.Add("LightGridDebug");
 
 	HistoryPos = -1;
 	InputBuf[0] = '\0';
@@ -175,7 +177,28 @@ void FOutputLogPanel::ExecCommand(const FString& CommandLine)
 		return;
 	}
 
-	if (EqualsIgnoreCase(CommandLine, "CLEAR"))
+	std::istringstream CommandStream(CommandLine);
+	FString Command;
+	CommandStream >> Command;
+	if (EqualsIgnoreCase(Command, "LightGridDebug"))
+	{
+		FString Value;
+		FString Extra;
+		CommandStream >> Value;
+		if ((Value != "0" && Value != "1") || (CommandStream >> Extra))
+		{
+			FLog::Log(ELogVerbosity::Info, "Usage: LightGridDebug <0|1>");
+		}
+		else if (!LightGridDebugCallback || !LightGridDebugCallback(Value == "1"))
+		{
+			FLog::Log(ELogVerbosity::Warning, "LightGridDebug is unavailable");
+		}
+		else
+		{
+			FLog::Log(ELogVerbosity::Info, "LightGridDebug {}", Value);
+		}
+	}
+	else if (EqualsIgnoreCase(CommandLine, "CLEAR"))
 	{
 		ClearLog();
 	}
@@ -185,6 +208,7 @@ void FOutputLogPanel::ExecCommand(const FString& CommandLine)
 		for (const FString& Command : Commands)
 			FLog::Log(ELogVerbosity::Info, "- {}", Command);
 		OnLog(ELogVerbosity::Info, "- STAT <fps|memory|all|none>");
+		OnLog(ELogVerbosity::Info, "- LightGridDebug <0|1> (Forward views)");
 	}
 	else if (EqualsIgnoreCase(CommandLine, "HISTORY"))
 	{

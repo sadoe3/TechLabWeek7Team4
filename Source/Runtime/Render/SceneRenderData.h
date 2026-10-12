@@ -4,6 +4,7 @@
 #include "Render/ObjectConstants.h"
 #include "Engine/PrimitiveSceneProxy.h"
 #include "Engine/LightSceneProxy.h"
+#include "Render/LightCulling/TileLightCulling.h"
 #include <algorithm>
 #include <iterator>
 #include <vector>
@@ -50,6 +51,8 @@ struct FSceneRenderData
 	TArray<FGatherChunk> GatherChunks;
 	TArray<FPerObjectConstants> ObjectConstants;
 	FFrameLightData FrameLightData;
+	// 해당 뷰의 Point 배열 다음 Spot 배열 순서. GPU 조명 인덱스와 대응한다.
+	TArray<FCullingLight> CullingLights;
 
 	void ResetScene()
 	{
@@ -73,6 +76,7 @@ struct FSceneRenderData
 		FrameLightData.DirectionalLights.Reset();
 		FrameLightData.PointLights.Reset();
 		FrameLightData.SpotLights.Reset();
+		CullingLights.Reset();
 		for (FGatherChunk& Chunk : GatherChunks)
 		{
 			Chunk.Packets.Reset();
