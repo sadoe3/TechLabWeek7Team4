@@ -20,6 +20,7 @@
 #include <bit>
 
 #include "SceneRenderData.h"
+#include "LightCulling/TileLightCullingResources.h"
 
 DECLARE_CYCLE_STAT("Draw Render Packets", STAT_DrawRenderPackets);
 
@@ -46,13 +47,16 @@ namespace
 		uint32 NumDirectionalLights;
 		uint32 NumPointLights;
 		uint32 NumSpotLights;
-		float Padding[2];
+		uint32 TileCountX;
+		uint32 MaxLightsPerTile;
 		FAmbientLightRenderData AmbientLight;
 		FDirectionalLightRenderData DirectionalLights[MaxDirectionalLights];
 		FPointLightRenderData PointLights[MaxPointLights];
 		FSpotLightRenderData SpotLights[MaxSpotLights];
 	};
 	static_assert(sizeof(FFrameConstants) % 16 == 0);
+	static_assert(offsetof(FFrameConstants, TileCountX) == 88);
+	static_assert(offsetof(FFrameConstants, AmbientLight) == 96);
 
 	constexpr uint32 MinPerObjectSlots = 1024;
 
@@ -126,12 +130,15 @@ void FRenderer::EnsurePerObjectSlotCapacity(uint32 SlotCount)
 }
 
 // 시점 상수 버퍼 및 렌더링 상태 설정
-void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights)
+void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights, const FTileLightCullingResources* TileLights)
 {
+	CurrentTileLights = TileLights && TileLights->IsValid() && Lights && View.ShadingModel != EShadingModel::Gouraud && (View.ViewMode == EViewportMode::Lit || View.ViewMode == EViewportMode::Wireframe) ? TileLights : nullptr;
 	bCurrentWireframe = View.ViewMode == EViewportMode::Wireframe;
 	FFrameConstants Constants{
 		.VP = View.ViewProjectionMatrix,
 		.CameraPosition = View.ViewLocation,
+		.TileCountX = CurrentTileLights ? CurrentTileLights->TileCountX : 0,
+		.MaxLightsPerTile = CurrentTileLights ? CurrentTileLights->MaxLightsPerTile : 0,
 	};
 	if (Lights)
 	{
@@ -167,11 +174,14 @@ void FRenderer::RenderAll(const FSceneView& View, const FRenderQueue& InQueue)
 }
 
 // 불투명 요소 렌더링
-void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights, bool bGBufferPass)
+void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights, bool bGBufferPass, const FTileLightCullingResources* TileLights)
 {
-	SetupView(View, Lights);
+	SetupView(View, Lights, bGBufferPass ? nullptr : TileLights);
 	DrawStaticGroups(bGBufferPass);
 	DrawPackets(InQueue, 0, InQueue.GetFirstTranslucentIndex(), View.ViewProjectionMatrix, bGBufferPass);
+	if (CurrentTileLights)
+		RenderCommand::UnbindShaderResources(8, 2, EShaderBindFlagBits::Pixel);
+	CurrentTileLights = nullptr;
 }
 
 void FRenderer::DrawDeferredLighting(const FSceneView& View, const FDeferredViewTargets& Targets,
@@ -532,6 +542,12 @@ void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, bool bGBuff
 		RenderCommand::BindShaderResource(static_cast<uint32>(i), material->Textures[i], EShaderBindFlagBits::Pixel);
 	}
 	RenderCommand::BindSamplerState(0, material->SamplerState, EShaderBindFlagBits::Pixel);
+	// StaticMeshUberLit의 타일 목록은 t8/t9. 재질 텍스처 설정 후 연결한다.
+	if (CurrentTileLights)
+	{
+		RenderCommand::BindShaderResource(8, CurrentTileLights->TileLightCountSRV.Get(), EShaderBindFlagBits::Pixel);
+		RenderCommand::BindShaderResource(9, CurrentTileLights->TileLightIndicesSRV.Get(), EShaderBindFlagBits::Pixel);
+	}
 }
 
 // b1 내용 채우고 꽂기

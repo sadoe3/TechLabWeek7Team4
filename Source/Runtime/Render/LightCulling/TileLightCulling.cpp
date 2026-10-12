@@ -30,10 +30,10 @@ bool FTileLightCulling::Init()
     return true;
 }
 
-void FTileLightCulling::Execute(FTileLightCullingResources & Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix & Projection, const FCullingLight * Lights, const uint32 LightCount)
+bool FTileLightCulling::Execute(FTileLightCullingResources& Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix& Projection, const FCullingLight* Lights, const uint32 LightCount)
 {
-    if (ViewWidth == 0 || ViewHeight == 0)
-        return;
+    if (ViewWidth == 0 || ViewHeight == 0 || !ComputeShader || !ConstantsBuffer)
+        return false;
 
     // CS_TileLightCulling.hlsl의 TILE_SIZE와 일치해야 한다
     constexpr uint32 TileSize = 16;
@@ -42,7 +42,7 @@ void FTileLightCulling::Execute(FTileLightCullingResources & Resources, const ui
     const uint32 TileCountY = ViewHeight / TileSize + (ViewHeight % TileSize != 0);
 
     if (!Resources.EnsureCapacity(TileCountX, TileCountY, LightCount, MaxLightsPerTile))
-        return;
+        return false;
 
     FTileCullingConstants Constants{};
     Constants.ViewSize[0] = ViewWidth;
@@ -78,6 +78,7 @@ void FTileLightCulling::Execute(FTileLightCullingResources & Resources, const ui
     // 이번 실행에서 사용한 입력 슬롯도 해제
     RenderCommand::UnbindShaderResources(LightSpheresSlot, 1, EShaderBindFlagBits::Compute);
     RenderCommand::BindConstantBuffer(ConstantsSlot, nullptr, EShaderBindFlagBits::Compute);
+    return true;
 }
 
 

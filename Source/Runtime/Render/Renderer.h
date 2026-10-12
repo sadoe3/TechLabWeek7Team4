@@ -36,13 +36,13 @@ public:
 	void DrawToneMap(FTexture2D* LightingHDR, FTexture2D* Depth);
 
 	// 시점 상수 버퍼 및 렌더링 상태 설정
-	void SetupView(const FSceneView& View, const FFrameLightData* Lights);
+	void SetupView(const FSceneView& View, const FFrameLightData* Lights, const FTileLightCullingResources* TileLights = nullptr);
 
 	// ObjViewer uses this forward path. Editor/PIE use SceneRenderer and GBuffer.
 	void RenderAll(const FSceneView& View, const FRenderQueue& InQueue);
 
 	// 불투명 요소 렌더링
-	void RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr, bool bGBufferPass = false);
+	void RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr, bool bGBufferPass = false, const FTileLightCullingResources* TileLights = nullptr);
 
 	// 반투명 요소 렌더링
 	void RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr);
@@ -82,6 +82,8 @@ private:
 	FGPUOcclusion GPUOcclusion;
 
 	FTileLightCulling TileLightCulling;
+	// 현재 불투명 패스 동안만 참조하며 소유권은 뷰에 있다.
+	const FTileLightCullingResources* CurrentTileLights = nullptr;
 
 	void DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 End, const FMatrix& ViewProjection, bool bGBufferPass = false);
 

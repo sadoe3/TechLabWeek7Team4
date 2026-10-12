@@ -815,21 +815,12 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	if (!Width || !Height || !Targets.IsValidFor(Width, Height))
 		return false;
 
-	// todo: 실제 라이트 인터페이스가 합쳐지면 테스트 입력을 교체한다.
-	const FCullingLight TestLights[] =
-	{
-		{ FVector(5.0f, 0.0f, 0.0f), 1.0f },
-		{ FVector(5.0f, 2.0f, 0.0f), 1.0f }
-	};
-	constexpr uint32 TestLightCount = static_cast<uint32>(sizeof(TestLights) / sizeof(TestLights[0]));
-
-	// Primitive 표시와 독립적으로 컬링하여 디버그 화면도 이번 프레임의 목록을 읽는다.
-	// 깊이 버퍼 없이 타일 옆면과 카메라 near/far 평면을 사용한다.
-	Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, SceneView.ProjectionMatrix, TestLights, TestLightCount);
+	// Primitive 표시와 독립적으로 이번 뷰의 실제 라이트 목록을 갱신한다.
+	const bool bHasTileLights = SceneRenderer.CullLights(Renderer, Targets, Width, Height);
 
 	if (Options.bDrawPrimitives)
 	{
-		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height);
+		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height, bHasTileLights);
 	}
 	else
 		RenderCommand::ClearDepthStencil(DepthTarget);
