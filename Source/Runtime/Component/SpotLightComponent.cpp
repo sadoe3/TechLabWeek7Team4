@@ -2,6 +2,8 @@
 #include "Component/SpotLightComponent.h"
 
 #include "Render/LineBatcher.h"
+#include "Engine/World.h"
+#include "Engine/LightSceneProxy.h"
 
 namespace
 {
@@ -77,4 +79,36 @@ void USpotLightComponent::DrawDebug(FLineBatcher* LineBatcher) const
 	FVector4 InnerColor(LightColor.X * 0.5f, LightColor.Y * 0.5f, LightColor.Z * 0.5f, 1.0f);
 
 	AddWireCone(LineBatcher, Apex, Forward, Right, Up, SafeInnerAngle, SafeRadius, InnerColor);
+
+	// Spot Light의 근사 구를 보기 위해서 그린다. (기능적으로 하는 역할은 없어서 나중에 지워도 된다.)
+	if (!GetWorld())
+		return;
+	for (const FLightSceneProxy* Proxy : GetWorld()->GetScene().GetLights())
+	{
+		if (Proxy->GetComponent() != this)
+			continue;
+		const auto* Data = std::get_if<FSpotLightRenderData>(&Proxy->GetRenderData());
+		if (!Data)
+			return;
+
+		const FVector Center = Proxy->GetCullingSphereCenter();
+		const float Radius = Proxy->GetCullingSphereRadius();
+		const FVector4 SphereColor(0.0f, 1.0f, 1.0f, 1.0f);
+		constexpr int32 SphereSegments = 64;
+		for (int32 Index = 0; Index < SphereSegments; ++Index)
+		{
+			const float A = 2.0f * PI * Index / SphereSegments;
+			const float B = 2.0f * PI * (Index + 1) / SphereSegments;
+			const float CA = std::cos(A) * Radius;
+			const float SA = std::sin(A) * Radius;
+			const float CB = std::cos(B) * Radius;
+			const float SB = std::sin(B) * Radius;
+			LineBatcher->AddLine(Center + FVector(CA, SA, 0.0f), Center + FVector(CB, SB, 0.0f), SphereColor);
+			LineBatcher->AddLine(Center + FVector(CA, 0.0f, SA), Center + FVector(CB, 0.0f, SB), SphereColor);
+			LineBatcher->AddLine(Center + FVector(0.0f, CA, SA), Center + FVector(0.0f, CB, SB), SphereColor);
+		}
+		LineBatcher->AddLine(Center, Data->Location, FVector4(1.0f, 0.0f, 1.0f, 1.0f));
+
+		return;
+	}
 }
