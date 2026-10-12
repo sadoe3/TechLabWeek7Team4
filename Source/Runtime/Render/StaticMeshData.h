@@ -72,4 +72,7 @@ struct FStaticMeshData
 	void OptimizeTriangleOrderForVertexCache();
 
 	void BuildTriangleBVH();
+
+	// 각 정점 Tangent 계산
+	void CalculateTangents();
 };

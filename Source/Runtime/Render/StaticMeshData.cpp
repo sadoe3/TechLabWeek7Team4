@@ -213,3 +213,53 @@ void FStaticMeshData::BuildTriangleBVH()
 
 	TriangleBVH->Build(Elements);
 }
+
+void FStaticMeshData::CalculateTangents()
+{
+	for (FVertexPNCT& Vertex : Vertices)
+	{
+		Vertex.Tangent = FVector();
+	}
+
+	for (int32 i = 0; i < Indices.Num(); i += 3)
+	{
+		const int32 i0 = Indices[i];
+		const int32 i1 = Indices[i + 1];
+		const int32 i2 = Indices[i + 2];
+
+		const FVertexPNCT& v0 = Vertices[i0];
+		const FVertexPNCT& v1 = Vertices[i1];
+		const FVertexPNCT& v2 = Vertices[i2];
+
+		const FVector e1 = v1.Position - v0.Position;
+		const FVector e2 = v2.Position - v0.Position;
+
+		const float du1 = v1.UV.X - v0.UV.X;
+		const float dv1 = v1.UV.Y - v0.UV.Y;
+		const float du2 = v2.UV.X - v0.UV.X;
+		const float dv2 = v2.UV.Y - v0.UV.Y;
+
+		const float determinant = du1 * dv2 - du2 * dv1;
+		if (fabs(determinant) < 1e-5f)
+			continue;
+
+		const FVector Tangent = ((e1 * dv2 - e2 * dv1) / determinant);
+
+		Vertices[i0].Tangent += Tangent;
+		Vertices[i1].Tangent += Tangent;
+		Vertices[i2].Tangent += Tangent;
+	}
+
+	for (FVertexPNCT& Vertex : Vertices)
+	{
+		const FVector Normal = Vertex.Normal;
+		FVector Tangent = Vertex.Tangent - Normal * Normal.Dot(Vertex.Tangent);
+
+		if (Tangent.Length() < 1e-6f)
+		{
+			Tangent = (fabs(Normal.X) < 0.9f ? FVector(1, 0, 0) : FVector(0, 1, 0)).Cross(Normal);
+		}
+
+		Vertex.Tangent = Tangent.Normalized();
+	}
+}
