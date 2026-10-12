@@ -13,6 +13,10 @@
 #define LIGHTING_ENABLED 1
 #endif
 
+#ifndef NORMAL_MAP_ENABLED
+#define NORMAL_MAP_ENABLED 0
+#endif
+
 #define SPECULAR_NONE 0
 #define SPECULAR_PHONG 1
 #define SPECULAR_BLINN_PHONG 2
@@ -105,6 +109,7 @@ struct VS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD;
+    float3 Tangent : TANGENT;
 };
 
 struct PS_INPUT
@@ -114,12 +119,16 @@ struct PS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD1;
+    float3 Tangent : TANGENT;
 };
 Texture2D Texture : register(t0);
+Texture2D NormalMap : register(t1);
+
 #if PER_VERTEX == 0 && LIGHTING_ENABLED == 1
 Buffer<uint> TileLightCount : register(t8);
 Buffer<uint> TileLightIndices : register(t9);
 #endif
+
 SamplerState Sampler : register(s0);
 
 static const float Pi = 3.14159265359f;
@@ -262,6 +271,17 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 	return FinalColor;
 }
 
+float3 CalculateNormalMapping(float3 SampledNormal, float3 Normal, float3 Tangent)
+{
+    float3 DecodedNormal = SampledNormal * 2.0f - 1.0f;
+    float3 N = normalize(Normal);
+    float3 T = normalize(Tangent - N * dot(Tangent, N));
+    float3 B = cross(N, T);
+    float3x3 TBN = float3x3(T, B, N);
+	
+    return normalize(mul(DecodedNormal, TBN));
+}
+
 PS_INPUT mainVS(VS_INPUT Input)
 {
 	PS_INPUT Output;
@@ -269,6 +289,7 @@ PS_INPUT mainVS(VS_INPUT Input)
 	Output.WorldPosition = mul(float4(Input.Position, 1.0f), World).xyz;
 	Output.Position = mul(float4(Output.WorldPosition, 1.0f), VP);
 	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), World).xyz); // TODO: 비균등 스케일 고려 필요
+    Output.Tangent = mul(Input.Tangent, (float3x3)World);
 	Output.UV = Input.UV;
 	
 #if PER_VERTEX == 1
@@ -284,11 +305,14 @@ float4 mainPS(PS_INPUT Input) : SV_TARGET
 {
 	float4 TexColor = Texture.Sample(Sampler, Input.UV + UVOffset);
 	float4 Albedo = TexColor * BaseColor;
-	  
 #if PER_VERTEX == 1
 	return Albedo * Input.Color;
 #else
-	float3 NormalDir = normalize(Input.Normal);
+    float3 NormalDir = normalize(Input.Normal);
+#if NORMAL_MAP_ENABLED == 1
+    float3 SampledNormalMap = NormalMap.Sample(Sampler, Input.UV + UVOffset).rgb;
+    NormalDir = CalculateNormalMapping(SampledNormalMap, Input.Normal, Input.Tangent);
+#endif
 	float3 ViewDir = normalize(CameraPosition - Input.WorldPosition);
 	float3 Color = CalculateLighting(Albedo.rgb, NormalDir, Input.WorldPosition, ViewDir, Input.Position.xy);
 	
