@@ -180,6 +180,15 @@ namespace
 					return false;
 				}
 			}
+			else if (Keyword == "map_bump" || Keyword == "bump")
+			{
+				FString MapBump;
+				if (!(Stream >> MapBump) || !TransformPath(Path, MapBump, MtlInfo.MapBump))
+				{
+					HTR_LOG(Warning, "[MTL] {}:{}: invalid map_bump (or bump) '{}'", Path, LineNumber, Line);
+					return false;
+				}
+			}
 		}
 		if (!MtlInfo.Name.empty())
 		{
@@ -389,6 +398,7 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedMtl.Name = RawMtl.Name;
 		CookedMtl.BaseColor.Set(RawMtl.Kd, RawMtl.D);
 		CookedMtl.DiffuseTexturePath = RawMtl.MapKd;
+		CookedMtl.NormalMapTexturePath = RawMtl.MapBump;
 		Cooked.MaterialSlots.Add(std::move(CookedMtl));
 	}
 
