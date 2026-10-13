@@ -89,6 +89,8 @@ cbuffer FrameConstants : register(b0)
 	DirectionalLightInfo DirectionalLights[MAX_DIRECTIONAL_LIGHT];
 	PointLightInfo PointLights[MAX_POINT_LIGHT];
 	SpotLightInfo SpotLights[MAX_SPOT_LIGHT];
+	uint TileSize;
+	uint3 TilePadding;
 };
 
 cbuffer MaterialParams : register(b1)
@@ -109,7 +111,7 @@ struct VS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD;
-    float3 Tangent : TANGENT;
+	float3 Tangent : TANGENT;
 };
 
 struct PS_INPUT
@@ -119,7 +121,7 @@ struct PS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD1;
-    float3 Tangent : TANGENT;
+	float3 Tangent : TANGENT;
 };
 Texture2D Texture : register(t0);
 Texture2D NormalMap : register(t1);
@@ -172,20 +174,14 @@ float CalculateDistanceAttenuation(float DistanceSquared, float Radius)
 	return RadiusFade * RadiusFade / (1.0f + DistanceSquared);
 }
 
-float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float OuterConeAngle, float Falloff)
+float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float OuterConeAngle)
 {
 	float CosOuter = cos(OuterConeAngle);
 	float CosInner = cos(InnerConeAngle);
-	// Falloff가 0이어도 바깥 원뿔 밖에는 빛이 닿지 않는다.
-	if (CosAngle <= CosOuter)
-		return 0.0f;
-
-	// 두 각도가 같으면 전이 구간 없이 항상 원뿔 내부로 처리한다.
-	if (CosInner == CosOuter)
-		return 1.0f;
-
-	float T = smoothstep(CosOuter, CosInner, CosAngle);
-	return pow(T, Falloff);
+	
+	float AttenuationMask = saturate((CosAngle - CosOuter) / (CosInner - CosOuter));
+	
+	return AttenuationMask * AttenuationMask;
 }
 
 float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 View, float2 ScreenPosition)
@@ -200,20 +196,20 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 	{
 		DirectionalLightInfo Light = DirectionalLights[i];
 		
-		float3 LightDir = normalize(Light.Direction);
-		float NdotL = saturate(dot(Normal, -LightDir));
+		float3 LightDir = -normalize(Light.Direction);
+		float NdotL = saturate(dot(Normal, LightDir));
 		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse(Albedo);
-		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 32.0f);
+		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
 	}
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
 	uint LightCount = NumPointLights + NumSpotLights;
 	uint ListOffset = 0;
 #if PER_VERTEX == 0 && LIGHTING_ENABLED == 1
-	// CS_TileLightCulling.hlsl과 같은 16픽셀 타일. SV_POSITION은 뷰포트 내부 픽셀 좌표다.
+	// CPU가 전달한 화면 타일 크기. SV_POSITION은 뷰포트 내부 픽셀 좌표다.
 	if (TileCountX > 0)
 	{
-		uint2 Tile = uint2(ScreenPosition) / 16;
+		uint2 Tile = uint2(ScreenPosition) / TileSize;
 		uint TileIndex = Tile.y * TileCountX + Tile.x;
 		LightCount = min(TileLightCount[TileIndex], MaxLightsPerTile);
 		ListOffset = TileIndex * MaxLightsPerTile;
@@ -251,16 +247,12 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 			float3 LightDir = Light.Location - Position;
 			float DistanceSquared = dot(LightDir, LightDir);
 			float DistanceAttenuation = CalculateDistanceAttenuation(DistanceSquared, Light.AttenuationRadius);
-			if (DistanceAttenuation <= 0.0f)
-				continue;
 
 			float Distance = sqrt(DistanceSquared);
 			LightDir /= max(Distance, 0.0001f);
 
 			float Cos = dot(-LightDir, normalize(Light.Direction));
-			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle, Light.Falloff);
-			if (AngleAttenuation <= 0.0f)
-				continue;
+			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
 
 			float NdotL = saturate(dot(Normal, LightDir));
 			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse(Albedo);
@@ -273,13 +265,13 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 
 float3 CalculateNormalMapping(float3 SampledNormal, float3 Normal, float3 Tangent)
 {
-    float3 DecodedNormal = SampledNormal * 2.0f - 1.0f;
-    float3 N = normalize(Normal);
-    float3 T = normalize(Tangent - N * dot(Tangent, N));
-    float3 B = cross(N, T);
-    float3x3 TBN = float3x3(T, B, N);
+	float3 DecodedNormal = SampledNormal * 2.0f - 1.0f;
+	float3 N = normalize(Normal);
+	float3 T = normalize(Tangent - N * dot(Tangent, N));
+	float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
 	
-    return normalize(mul(DecodedNormal, TBN));
+	return normalize(mul(DecodedNormal, TBN));
 }
 
 PS_INPUT mainVS(VS_INPUT Input)
@@ -289,7 +281,7 @@ PS_INPUT mainVS(VS_INPUT Input)
 	Output.WorldPosition = mul(float4(Input.Position, 1.0f), World).xyz;
 	Output.Position = mul(float4(Output.WorldPosition, 1.0f), VP);
 	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), World).xyz); // TODO: 비균등 스케일 고려 필요
-    Output.Tangent = mul(Input.Tangent, (float3x3)World);
+	Output.Tangent = mul(Input.Tangent, (float3x3)World);
 	Output.UV = Input.UV;
 	
 #if PER_VERTEX == 1
@@ -308,10 +300,10 @@ float4 mainPS(PS_INPUT Input) : SV_TARGET
 #if PER_VERTEX == 1
 	return Albedo * Input.Color;
 #else
-    float3 NormalDir = normalize(Input.Normal);
+	float3 NormalDir = normalize(Input.Normal);
 #if NORMAL_MAP_ENABLED == 1
-    float3 SampledNormalMap = NormalMap.Sample(Sampler, Input.UV + UVOffset).rgb;
-    NormalDir = CalculateNormalMapping(SampledNormalMap, Input.Normal, Input.Tangent);
+	float3 SampledNormalMap = NormalMap.Sample(Sampler, Input.UV + UVOffset).rgb;
+	NormalDir = CalculateNormalMapping(SampledNormalMap, Input.Normal, Input.Tangent);
 #endif
 	float3 ViewDir = normalize(CameraPosition - Input.WorldPosition);
 	float3 Color = CalculateLighting(Albedo.rgb, NormalDir, Input.WorldPosition, ViewDir, Input.Position.xy);

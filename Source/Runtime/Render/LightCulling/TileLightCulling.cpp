@@ -35,8 +35,8 @@ bool FTileLightCulling::Execute(FTileLightCullingResources& Resources, const uin
     if (ViewWidth == 0 || ViewHeight == 0 || !ComputeShader || !ConstantsBuffer)
         return false;
 
-    // CS_TileLightCulling.hlsl의 TILE_SIZE와 일치해야 한다
-    constexpr uint32 TileSize = 16;
+    // 화면 타일 크기는 스레드 그룹 크기와 독립적이다.
+    constexpr uint32 TileSize = LIGHT_CULLING_TILE_SIZE;
 
     const uint32 TileCountX = ViewWidth / TileSize + (ViewWidth % TileSize != 0);
     const uint32 TileCountY = ViewHeight / TileSize + (ViewHeight % TileSize != 0);

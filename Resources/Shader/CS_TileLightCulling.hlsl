@@ -1,5 +1,4 @@
-#define TILE_SIZE        16
-#define THREADS_PER_TILE (TILE_SIZE * TILE_SIZE)
+#define THREADS_PER_TILE 256                // threadgroup의 크기는 이제 tile 크기와 관련이 없다
 #define PLANE_COUNT      6
 
 struct FCullingLight
@@ -14,13 +13,14 @@ StructuredBuffer<FCullingLight> LightSpheres : register(t0);
 cbuffer TileCullingConstants : register(b0)
 {
     uint2 ViewSize; // 렌더링할 화면의 가로·세로 크기 (픽셀)
-    uint TileCountX; // 가로 타일 개수: ceil(ViewSize.x / TILE_SIZE)
+    uint TileCountX; // 가로 타일 개수: ceil(ViewSize.x / TileSize)
     uint LightCount; // LightSpheres에서 검사할 라이트 개수
 
     row_major float4x4 Projection;
 
     uint MaxLightsPerTile; // 타일 하나에 배정한 라이트 인덱스 최대 저장 용량
-    uint3 Padding;
+    uint TileSize;
+    uint2 Padding;
 };
 
 // 실제 통과 개수. 용량을 초과한 개수도 그대로 기록한다.
@@ -49,7 +49,7 @@ bool SphereOutsidePlane(float3 center, float radius, float4 plane)
 }
 
 
-[numthreads(TILE_SIZE, TILE_SIZE, 1)] 
+[numthreads(THREADS_PER_TILE, 1, 1)]
 void mainCS(uint3 groupId : SV_GroupID, uint localIndex : SV_GroupIndex)  // GroupID = dispatch 레벨에서의 block index, GroupIndex = thread group 레벨에서의 thread index
 {
     uint tileIndex = groupId.y * TileCountX + groupId.x;
@@ -59,8 +59,8 @@ void mainCS(uint3 groupId : SV_GroupID, uint localIndex : SV_GroupIndex)  // Gro
     {
         SharedLightCount = 0;
 
-        float2 pixelMin = float2(groupId.xy * TILE_SIZE);
-        float2 pixelMax = min(pixelMin + float2(TILE_SIZE, TILE_SIZE), float2(ViewSize));
+        float2 pixelMin = float2(groupId.xy * TileSize);
+        float2 pixelMax = min(pixelMin + float2(TileSize, TileSize), float2(ViewSize));
 
         // Gribb-Hartmann 방식으로 plane 계산
         float xMin = 2.0f * pixelMin.x / ViewSize.x - 1.0f;

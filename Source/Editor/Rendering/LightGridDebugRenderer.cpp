@@ -63,7 +63,7 @@ bool FLightGridDebugRenderer::Init(UFont* InFont)
     PipelineState.Shader = Shader;
     PipelineState.Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
     PipelineState.RasterizerState = ERasterizerState::SolidNone;
-    PipelineState.BlendState = EBlendState::Opaque;
+    PipelineState.BlendState = EBlendState::AlphaBlend;
     PipelineState.DepthStencilState = EDepthStencilState::Disabled;
 
     Font = InFont;
