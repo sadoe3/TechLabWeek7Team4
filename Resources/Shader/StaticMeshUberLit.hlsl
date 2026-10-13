@@ -143,25 +143,25 @@ float3 Diffuse()
 	return 1.0f / Pi;
 }
 
-float3 SpecularPhong(float3 R, float3 V, float Shininess)
+float3 SpecularPhong(float3 R, float3 V, float Shininess, float Normalization)
 {
 	float RdotV = saturate(dot(R, V));
-	return pow(RdotV, Shininess) * (Shininess + 2.0f) / (2.0f * Pi);
+	return pow(RdotV, Shininess) * Normalization;
 }
 
-float3 SpecularBlinnPhong(float3 N, float3 H, float Shininess)
+float3 SpecularBlinnPhong(float3 N, float3 H, float Shininess, float Normalization)
 {
 	float NdotH = saturate(dot(N, H));
-	return pow(NdotH, Shininess) * (Shininess + 8.0f) / (8.0f * Pi);
+	return pow(NdotH, Shininess) * Normalization;
 }
 
-float3 Specular(float3 N, float3 L, float3 V, float Shininess)
+float3 Specular(float3 N, float3 L, float3 V, float Shininess, float Normalization)
 {
 #if SPECULAR_MODEL == SPECULAR_PHONG
-	return SpecularPhong(reflect(-L, N), V, Shininess / 4.0f);
+	return SpecularPhong(reflect(-L, N), V, Shininess / 4.0f, Normalization);
 #elif SPECULAR_MODEL == SPECULAR_BLINN_PHONG
 	float3 H = normalize(L + V);
-	return SpecularBlinnPhong(N, H, Shininess);
+	return SpecularBlinnPhong(N, H, Shininess, Normalization);
 #endif
 	return float3(0.0f, 0.0f, 0.0f);
 }
@@ -272,6 +272,14 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 	return Albedo;
 #endif
 	
+#if SPECULAR_MODEL == SPECULAR_PHONG
+	float Normalization = (Shininess + 2.0f) / (2.0f * Pi);
+#elif SPECULAR_MODEL == SPECULAR_BLINN_PHONG
+	float Normalization = (Shininess + 2.0f) * (Shininess + 4.0f) / (8.0f * Pi * (pow(2.0f, -Shininess / 2.0f) + Shininess));
+#else
+	float Normalization = 1.0f;
+	#endif
+	
 	float3 FinalColor = float3(0.0f, 0.0f, 0.0f);
 	
 	for (uint i = 0; i < NumDirectionalLights; ++i)
@@ -280,7 +288,7 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 		
 		float3 LightDir = -normalize(Light.Direction);
 		float NdotL = saturate(dot(Normal, LightDir));
-		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(Normal, LightDir, View, Shininess);
+		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(Normal, LightDir, View, Shininess, Normalization);
 	}
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
@@ -318,7 +326,7 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 			LightDir /= max(Distance, 0.0001f);
 
 			float NdotL = saturate(dot(Normal, LightDir));
-			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, Shininess);
+			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
 		}
 		else
 		{
@@ -335,7 +343,7 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
 
 			float NdotL = saturate(dot(Normal, LightDir));
-			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, Shininess);
+			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
 		}
 	}
 
