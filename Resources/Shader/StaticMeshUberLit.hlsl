@@ -171,8 +171,11 @@ float CalculateDistanceAttenuation(float DistanceSquared, float Radius)
 	if (Radius <= 0.0f || DistanceSquared >= RadiusSquared)
 		return 0.0f;
 
-	float RadiusFade = saturate(1.0f - DistanceSquared / RadiusSquared);
-	return RadiusFade * RadiusFade / (1.0f + DistanceSquared);
+	float NormalizedDistanceSquared = DistanceSquared / RadiusSquared;
+	float AttenuationFade = saturate(1.0f - NormalizedDistanceSquared * NormalizedDistanceSquared);
+	// 최소 거리 0.01(엔진 좌표 단위). 광원 위치의 0 나눗셈과 근거리 발산을 제한한다.
+	const float MinDistanceSquared = 0.0001f;
+    return AttenuationFade * AttenuationFade / max(DistanceSquared, MinDistanceSquared);
 }
 
 float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float OuterConeAngle)
