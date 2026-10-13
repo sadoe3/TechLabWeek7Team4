@@ -99,7 +99,7 @@ void FLightSceneProxy::Update()
 		const FVector Direction = Light->GetLightDirection();
 		UpdateSpotSphere(Radius, OuterAngle);
 		CullingSphereCenter = Position + Direction * SpotSphereOffset;
-		RenderData = FSpotLightRenderData{ Color, Intensity, Position, Radius, Direction, InnerAngle, OuterAngle, Light->GetFalloff() };
+		RenderData = FSpotLightRenderData{ Color, Intensity, Position, Radius, Direction, InnerAngle, OuterAngle };
 		bEnabled = bEnabled && Radius > 0.0f;
 		break;
 	}
