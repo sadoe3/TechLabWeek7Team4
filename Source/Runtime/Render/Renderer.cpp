@@ -53,6 +53,8 @@ namespace
 		FDirectionalLightRenderData DirectionalLights[MaxDirectionalLights];
 		FPointLightRenderData PointLights[MaxPointLights];
 		FSpotLightRenderData SpotLights[MaxSpotLights];
+		uint32 TileSize = LIGHT_CULLING_TILE_SIZE;
+		uint32 TilePadding[3] = {};
 	};
 	static_assert(sizeof(FFrameConstants) % 16 == 0);
 	static_assert(offsetof(FFrameConstants, TileCountX) == 88);

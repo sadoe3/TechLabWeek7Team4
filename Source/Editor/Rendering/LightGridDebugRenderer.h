@@ -3,6 +3,7 @@
 #include "Core/Types.h"
 #include "Render/Buffer.h"
 #include "Render/PipelineState.h"
+#include "Render/LightCulling/TileLightCulling.h"
 
 class UFont;
 class FTexture2D;
@@ -14,7 +15,7 @@ struct alignas(16) FLightGridDebugConstants
 {
     uint32 ViewSize[2] = {};
     uint32 TileCountX = 0;
-    uint32 TileSize = 16;
+    uint32 TileSize = LIGHT_CULLING_TILE_SIZE;
 
     uint32 MaxLightsPerTile = 0;
     float HeatMapMaxCount = 8.0f;

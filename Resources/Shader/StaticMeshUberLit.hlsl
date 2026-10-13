@@ -89,6 +89,8 @@ cbuffer FrameConstants : register(b0)
 	DirectionalLightInfo DirectionalLights[MAX_DIRECTIONAL_LIGHT];
 	PointLightInfo PointLights[MAX_POINT_LIGHT];
 	SpotLightInfo SpotLights[MAX_SPOT_LIGHT];
+	uint TileSize;
+	uint3 TilePadding;
 };
 
 cbuffer MaterialParams : register(b1)
@@ -210,10 +212,10 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 	uint LightCount = NumPointLights + NumSpotLights;
 	uint ListOffset = 0;
 #if PER_VERTEX == 0 && LIGHTING_ENABLED == 1
-	// CS_TileLightCulling.hlsl과 같은 16픽셀 타일. SV_POSITION은 뷰포트 내부 픽셀 좌표다.
+	// CPU가 전달한 화면 타일 크기. SV_POSITION은 뷰포트 내부 픽셀 좌표다.
 	if (TileCountX > 0)
 	{
-		uint2 Tile = uint2(ScreenPosition) / 16;
+		uint2 Tile = uint2(ScreenPosition) / TileSize;
 		uint TileIndex = Tile.y * TileCountX + Tile.x;
 		LightCount = min(TileLightCount[TileIndex], MaxLightsPerTile);
 		ListOffset = TileIndex * MaxLightsPerTile;
