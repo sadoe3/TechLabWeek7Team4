@@ -12,9 +12,38 @@ static const int AXIS_PLANE_YZ = 3;
 static const int AXIS_PLANE_ZX = 4;
 static const int AXIS_PLANE_XY = 5;
 static const int AXIS_SCREEN = 6;   // 3축 자유 이동
+static const int AXIS_ARCBALL = 7;
 
 static const float AxisLength = 1.5f;
 static const float HitPixels = 12.0f;
+
+namespace
+{
+	// 구에 닿지 않는 드래그는 레이의 최근접점을 구 표면으로 제한한다.
+	bool ProjectToArcball(const FRay& Ray, const FVector& Center, float Radius,
+		FVector& OutDirection, bool bAllowOutside)
+	{
+		const FVector Direction = Ray.Direction.Normalized();
+		const FVector Offset = Ray.Origin - Center;
+		const float AlongRay = Offset.Dot(Direction);
+		const float Discriminant = AlongRay * AlongRay - Offset.Dot(Offset) + Radius * Radius;
+		float Distance = -AlongRay;
+		if (Discriminant >= 0.0f)
+		{
+			Distance -= std::sqrt(Discriminant);
+			if (Distance < 0.0f)
+				Distance = -AlongRay + std::sqrt(Discriminant);
+		}
+		else if (!bAllowOutside)
+		{
+			return false;
+		}
+		if (Distance < 0.0f)
+			return false;
+		OutDirection = (Offset + Direction * Distance).Normalized();
+		return OutDirection.Dot(OutDirection) > 0.0f;
+	}
+}
 
 // 입력 View의 카메라 조건으로 축 선택과 드래그를 갱신한다.
 void FGizmo::Update(const FRay& MouseRay, const FVector2& MousePos, const FMatrix& ViewProj, int ScreenW, int ScreenH, bool bMouseDown, const FVector& CameraLocation, const bool bCameraOrthographic)
@@ -39,6 +68,13 @@ void FGizmo::Update(const FRay& MouseRay, const FVector2& MousePos, const FMatri
 	}
 
 	HoveredAxis = PickAxis(MousePos, ViewProj, ScreenW, ScreenH); // 현재 마우스가 올라간 기즈모 축이 있으면
+	// 축 링과 화면 회전 테두리가 내부 자유 회전보다 우선한다.
+	if (Mode == EGizmoMode::Rotation && HoveredAxis < 0)
+	{
+		FVector SphereDirection;
+		if (ProjectToArcball(MouseRay, GetRenderLocation(), RingRadius, SphereDirection, false))
+			HoveredAxis = AXIS_ARCBALL;
+	}
 
 	if (bMouseDown && HoveredAxis >= 0) // 마우스가 올라간 축이 있고 마우스가 눌렸으면
 		BeginDrag(HoveredAxis, MouseRay, MousePos);
@@ -169,6 +205,14 @@ void FGizmo::BeginDrag(int Axis, const FRay& MouseRay, const FVector2& MousePos)
 	DragStartRenderLocation = GetRenderLocation();    
 	DragStartRotation = GetRotation();
 	DragStartScale = GetScale();
+	if (Mode == EGizmoMode::Rotation && Axis == AXIS_ARCBALL)
+	{
+		ArcballStartWorldRotation = Target->GetWorldRotation().Quaternion();
+		USceneComponent* Parent = Target->GetAttachParent();
+		ArcballParentInverse = Parent ? Parent->GetWorldRotation().Quaternion().Inverse() : FQuat::Identity();
+		ProjectToArcball(MouseRay, DragStartRenderLocation, RingRadius, ArcballStart, true);
+		return;
+	}
 
 	DragAxisDirection = GetAxisDirection(Axis);
 	FVector axis = DragAxisDirection;
@@ -213,6 +257,27 @@ void FGizmo::BeginDrag(int Axis, const FRay& MouseRay, const FVector2& MousePos)
 // 평면 교차점 변화를 이동·회전·크기에 반영한다.
 void FGizmo::UpdateDrag(const FRay& MouseRay, const FVector2& MousePos)
 {
+	if (Mode == EGizmoMode::Rotation && DraggingAxis == AXIS_ARCBALL)
+	{
+		FVector Current;
+		if (!ProjectToArcball(MouseRay, DragStartRenderLocation, RingRadius, Current, true))
+			return;
+		FVector Axis = ArcballStart.Cross(Current);
+		const float SinAngle = Axis.Length();
+		const float CosAngle = FMath::Clamp(ArcballStart.Dot(Current), -1.0f, 1.0f);
+		FQuat Delta = FQuat::Identity();
+		if (SinAngle > 0.0001f)
+			Delta = FQuat::MakeFromAxisAngle(Axis / SinAngle, std::atan2(SinAngle, CosAngle));
+		else if (CosAngle < 0.0f)
+		{
+			const FVector Reference = std::fabs(ArcballStart.Z) > 0.9f ? FVector(1, 0, 0) : FVector(0, 0, 1);
+			Delta = FQuat::MakeFromAxisAngle(ArcballStart.Cross(Reference).Normalized(), PI);
+		}
+		const FQuat RelativeRotation = ArcballParentInverse * Delta * ArcballStartWorldRotation;
+		Target->SetRelativeRotation(RelativeRotation.Normalized().ToFRotator());
+		return;
+	}
+
 	float t;
 	if (!RayIntersectsPlane(MouseRay, DragStartRenderLocation, DragPlaneNormal, t))
 		return;

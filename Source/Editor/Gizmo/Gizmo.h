@@ -76,6 +76,9 @@ private:
 	FVector DragStartPoint;
 	FVector DragStartLocation;
 	FRotator DragStartRotation;
+	FVector ArcballStart;
+	FQuat ArcballStartWorldRotation;
+	FQuat ArcballParentInverse;
 	FVector DragStartScale;
 	FVector DragAxisDirection;
 	FVector DragStartRenderLocation;

@@ -15,7 +15,7 @@ public:
 	void Draw(ULightComponent* Light, const FMatrix& ViewProj, FLineBatcher* LineBatcher);
 
 private:
-	void DrawDirectionArrow(const FVector& Location, const FRotator& Rotation, const FMatrix& ViewProj);
+	void DrawDirectionArrow(const FVector& Location, const FRotator& Rotation, const FVector& Color, const FMatrix& ViewProj);
 
 	UStaticMesh* ArrowMesh = nullptr;
 	FShaderProgram* Shader = nullptr;

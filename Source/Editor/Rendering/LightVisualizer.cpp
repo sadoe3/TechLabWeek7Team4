@@ -163,7 +163,7 @@ void FLightVisualizer::Draw(ULightComponent* Light, const FMatrix& ViewProj, FLi
 	switch (Light->GetLightType())
 	{
 	case ELightType::Directional:
-		DrawDirectionArrow(Light->GetWorldLocation(), Light->GetWorldRotation(), ViewProj);
+		DrawDirectionArrow(Light->GetWorldLocation(), Light->GetWorldRotation(), Light->GetLightColor(), ViewProj);
 		break;
 	case ELightType::Point:
 		if (UPointLightComponent* Point = Cast<UPointLightComponent>(Light))
@@ -178,7 +178,7 @@ void FLightVisualizer::Draw(ULightComponent* Light, const FMatrix& ViewProj, FLi
 	}
 }
 
-void FLightVisualizer::DrawDirectionArrow(const FVector& Location, const FRotator& Rotation, const FMatrix& ViewProj)
+void FLightVisualizer::DrawDirectionArrow(const FVector& Location, const FRotator& Rotation, const FVector& Color, const FMatrix& ViewProj)
 {
 	if (!ArrowMesh || !Shader || !CB)
 		return;
@@ -200,7 +200,7 @@ void FLightVisualizer::DrawDirectionArrow(const FVector& Location, const FRotato
 	Data.World.M[2][0] = Direction.X; Data.World.M[2][1] = Direction.Y; Data.World.M[2][2] = Direction.Z;
 	Data.World.M[3][0] = Location.X; Data.World.M[3][1] = Location.Y; Data.World.M[3][2] = Location.Z;
 	Data.ViewProj = ViewProj;
-	Data.Color = FVector4(0.6f, 0.6f, 0.6f, 1.0f);
+	Data.Color = FVector4(Color, 1.0f);
 
 	RenderCommand::BindPipelineState(PipelineState);
 	RenderCommand::BindMesh(ArrowMesh);
@@ -208,4 +208,3 @@ void FLightVisualizer::DrawDirectionArrow(const FVector& Location, const FRotato
 	RenderCommand::BindConstantBuffer(0, CB.get(), EShaderBindFlagBits::Vertex);
 	RenderCommand::DrawIndexed(ArrowMesh->IndexBuffer->GetIndexCount());
 }
-

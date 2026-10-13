@@ -27,9 +27,9 @@
                         },
                         "Transform": {
                             "Location": [
-                                3.6082308292388916,
-                                5.416924476623535,
-                                9.328356742858887
+                                3.309386968612671,
+                                7.517418384552002,
+                                13.410565376281738
                             ],
                             "Rotation": [
                                 83.63629913330078,
@@ -58,8 +58,7 @@
                         "LightColor": [
                             1.0,
                             0.7058823108673096,
-                            0.0,
-                            97.5999984741211
+                            0.0
                         ],
                         "OuterConeAngle": 30.0,
                         "Transform": {
@@ -138,9 +137,9 @@
                         "StaticMesh": "Cube",
                         "Transform": {
                             "Location": [
-                                0.0,
-                                0.0,
-                                0.0
+                                -0.6599960327148438,
+                                0.0853738784790039,
+                                0.2242870330810547
                             ],
                             "Rotation": [
                                 0.0,
@@ -190,9 +189,9 @@
                         },
                         "Transform": {
                             "Location": [
-                                -7.226785659790039,
-                                -11.998400688171387,
-                                5.874081134796143
+                                -9.346663475036621,
+                                -16.08633041381836,
+                                7.586390972137451
                             ],
                             "Rotation": [
                                 0.0,
@@ -219,8 +218,93 @@
                         "LightColor": [
                             0.1636955589056015,
                             0.906862735748291,
-                            0.03556324169039726,
-                            18.299999237060547
+                            0.03556324169039726
+                        ],
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bEnabled": true,
+                        "bHiddenInGame": false,
+                        "bShowLightBounds": true,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "ADirectionalLightActor",
+            "Components": [
+                {
+                    "Class": "UBillboardComponent",
+                    "Name": "UBillboardComponent_0",
+                    "Properties": {
+                        "Material": {
+                            "Base": "BillboardMaterial",
+                            "BaseColor": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "PSOType": 14,
+                            "SamplerState": "LinearClamp",
+                            "Textures": [
+                                "Editor/Icon/PointLight_64x.png"
+                            ],
+                            "UVScrollSpeed": [
+                                0.0,
+                                0.0
+                            ]
+                        },
+                        "Transform": {
+                            "Location": [
+                                -9.749156951904297,
+                                28.779308319091797,
+                                1.3444900512695313
+                            ],
+                            "Rotation": [
+                                -25.726762771606445,
+                                -5.407045841217041,
+                                69.10126495361328
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                },
+                {
+                    "Class": "UDirectionalLightComponent",
+                    "Name": "UDirectionalLightComponent_0",
+                    "Properties": {
+                        "Intensity": 1.0,
+                        "LightColor": [
+                            1.0,
+                            0.034313738346099854,
+                            0.034313738346099854
                         ],
                         "Transform": {
                             "Location": [
