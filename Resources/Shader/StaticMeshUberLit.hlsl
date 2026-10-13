@@ -197,7 +197,7 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 		float3 LightDir = normalize(Light.Direction);
 		float NdotL = saturate(dot(Normal, -LightDir));
 		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse(Albedo);
-		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 40.0f);
+		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
 	}
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
