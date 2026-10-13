@@ -36,8 +36,7 @@ struct FSpotLightRenderData
 	FVector Direction;
 	float InnerConeAngle;
 	float OuterConeAngle;
-	float Falloff;
-	float Padding[2];
+	float Padding[3];
 };
 
 inline constexpr uint32 MaxDirectionalLights = 8;

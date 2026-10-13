@@ -72,7 +72,6 @@ struct SpotLightInfo
 	float3 Direction;
 	float InnerConeAngle;
 	float OuterConeAngle;
-	float Falloff;
 	float2 Padding;
 };
 
