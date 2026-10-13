@@ -109,7 +109,7 @@ struct VS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD;
-    float3 Tangent : TANGENT;
+	float3 Tangent : TANGENT;
 };
 
 struct PS_INPUT
@@ -119,7 +119,7 @@ struct PS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD1;
-    float3 Tangent : TANGENT;
+	float3 Tangent : TANGENT;
 };
 Texture2D Texture : register(t0);
 Texture2D NormalMap : register(t1);
@@ -153,7 +153,7 @@ float3 SpecularBlinnPhong(float3 Ks, float3 N, float3 H, float Shininess)
 float3 Specular(float3 Ks, float3 N, float3 L, float3 V, float Shininess)
 {
 #if SPECULAR_MODEL == SPECULAR_PHONG
-	return SpecularPhong(Ks, reflect(L, N), V, Shininess);
+	return SpecularPhong(Ks, reflect(-L, N), V, Shininess);
 #elif SPECULAR_MODEL == SPECULAR_BLINN_PHONG
 	float3 H = normalize(L + V);
 	return SpecularBlinnPhong(Ks, N, H, Shininess);
@@ -194,8 +194,8 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 	{
 		DirectionalLightInfo Light = DirectionalLights[i];
 		
-		float3 LightDir = normalize(Light.Direction);
-		float NdotL = saturate(dot(Normal, -LightDir));
+		float3 LightDir = -normalize(Light.Direction);
+		float NdotL = saturate(dot(Normal, LightDir));
 		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse(Albedo);
 		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
 	}
@@ -263,13 +263,13 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 
 float3 CalculateNormalMapping(float3 SampledNormal, float3 Normal, float3 Tangent)
 {
-    float3 DecodedNormal = SampledNormal * 2.0f - 1.0f;
-    float3 N = normalize(Normal);
-    float3 T = normalize(Tangent - N * dot(Tangent, N));
-    float3 B = cross(N, T);
-    float3x3 TBN = float3x3(T, B, N);
+	float3 DecodedNormal = SampledNormal * 2.0f - 1.0f;
+	float3 N = normalize(Normal);
+	float3 T = normalize(Tangent - N * dot(Tangent, N));
+	float3 B = cross(N, T);
+	float3x3 TBN = float3x3(T, B, N);
 	
-    return normalize(mul(DecodedNormal, TBN));
+	return normalize(mul(DecodedNormal, TBN));
 }
 
 PS_INPUT mainVS(VS_INPUT Input)
@@ -279,7 +279,7 @@ PS_INPUT mainVS(VS_INPUT Input)
 	Output.WorldPosition = mul(float4(Input.Position, 1.0f), World).xyz;
 	Output.Position = mul(float4(Output.WorldPosition, 1.0f), VP);
 	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), World).xyz); // TODO: 비균등 스케일 고려 필요
-    Output.Tangent = mul(Input.Tangent, (float3x3)World);
+	Output.Tangent = mul(Input.Tangent, (float3x3)World);
 	Output.UV = Input.UV;
 	
 #if PER_VERTEX == 1
@@ -298,10 +298,10 @@ float4 mainPS(PS_INPUT Input) : SV_TARGET
 #if PER_VERTEX == 1
 	return Albedo * Input.Color;
 #else
-    float3 NormalDir = normalize(Input.Normal);
+	float3 NormalDir = normalize(Input.Normal);
 #if NORMAL_MAP_ENABLED == 1
-    float3 SampledNormalMap = NormalMap.Sample(Sampler, Input.UV + UVOffset).rgb;
-    NormalDir = CalculateNormalMapping(SampledNormalMap, Input.Normal, Input.Tangent);
+	float3 SampledNormalMap = NormalMap.Sample(Sampler, Input.UV + UVOffset).rgb;
+	NormalDir = CalculateNormalMapping(SampledNormalMap, Input.Normal, Input.Tangent);
 #endif
 	float3 ViewDir = normalize(CameraPosition - Input.WorldPosition);
 	float3 Color = CalculateLighting(Albedo.rgb, NormalDir, Input.WorldPosition, ViewDir, Input.Position.xy);
