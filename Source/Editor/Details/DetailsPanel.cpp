@@ -8,6 +8,8 @@
 #include "Component/TextRenderComponent.h"
 #include "Component/SpotLightComponent.h"
 #include "Component/PointLightComponent.h"
+#include "Component/AmbientLightComponent.h"
+#include "Component/DirectionalLightComponent.h"
 #include "Component/RotationMovementComponent.h"
 #include "Component/ParticleSubUVComponent.h"
 #include "Component/BillboardComponent.h"
@@ -773,7 +775,10 @@ namespace
 		switch (Property.Type)
 		{
 		case EPropertyType::Float:
-			if (Property.bHasRange)
+			if (Property.Name == "Intensity" && Cast<UAmbientLightComponent>(Object))
+				bChanged = ImGui::DragFloat(Label.c_str(), static_cast<float*>(ValuePtr),
+					0.001f, 0.0f, 1.0f, "%.3f");
+			else if (Property.bHasRange)
 				bChanged = ImGui::DragFloat(Label.c_str(), static_cast<float*>(ValuePtr),
 					(Property.MaxValue - Property.MinValue) * 0.001f,
 					Property.MinValue, Property.MaxValue, "%.3f", ImGuiSliderFlags_AlwaysClamp);
@@ -1121,6 +1126,20 @@ void FDetailsPanel::DrawAddComponentPopup(AActor * Owner)
 		if (ImGui::Selectable("PointLight Component"))
 		{
 			auto* NewComp = Owner->CreateDefaultSubobject<UPointLightComponent>("PointLight");
+			if (Owner->GetRootComponent())
+				NewComp->SetupAttachment(Owner->GetRootComponent());
+			NewComp->RegisterComponent();
+		}
+		if (ImGui::Selectable("AmbientLight Component"))
+		{
+			auto* NewComp = Owner->CreateDefaultSubobject<UAmbientLightComponent>("AmbientLight");
+			if (Owner->GetRootComponent())
+				NewComp->SetupAttachment(Owner->GetRootComponent());
+			NewComp->RegisterComponent();
+		}
+		if (ImGui::Selectable("DirectionalLight Component"))
+		{
+			auto* NewComp = Owner->CreateDefaultSubobject<UDirectionalLightComponent>("DirectionalLight");
 			if (Owner->GetRootComponent())
 				NewComp->SetupAttachment(Owner->GetRootComponent());
 			NewComp->RegisterComponent();

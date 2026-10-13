@@ -183,6 +183,7 @@ void FLightVisualizer::Draw(ULightComponent* Light, const FMatrix& ViewProj, FLi
 			DrawPointLight(*Point, LineBatcher);
 		break;
 	case ELightType::Spot:
+		DrawDirectionArrow(Light->GetWorldLocation(), Light->GetWorldRotation(), Light->GetLightColor(), ViewProj);
 		if (USpotLightComponent* Spot = Cast<USpotLightComponent>(Light))
 			DrawSpotLight(*Spot, LineBatcher);
 		break;

@@ -10,5 +10,6 @@ class UAmbientLightComponent : public ULightComponent
 	REFLECT_END()
 
 public:
+	UAmbientLightComponent() { Intensity = 0.1f; }
 	ELightType GetLightType() const override { return ELightType::Ambient; }
 };
