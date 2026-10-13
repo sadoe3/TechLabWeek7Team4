@@ -95,6 +95,25 @@ namespace
 		return true;
 	}
 
+	bool ReadTextureFileName(std::istringstream& Stream, FString& Out)
+	{
+		Out.clear();
+
+		FString Token;
+		while (Stream >> Token)
+		{
+			Out = Token;
+		}
+
+		// "" 로 감싸진 경로
+		if (Out.size() >= 2 && Out.front() == '"' && Out.back() == '"')
+		{
+			Out = Out.substr(1, Out.size() - 2);
+		}
+
+		return !Out.empty();
+	}
+
 	bool TransformPath(const FString& BaseFilePath, FStringView RelativePath, FString& Out)
 	{
 		if (RelativePath.empty())
@@ -180,10 +199,10 @@ namespace
 					return false;
 				}
 			}
-			else if (Keyword == "map_bump" || Keyword == "bump")
+			else if (Keyword == "map_bump" || Keyword == "bump" || Keyword == "map_Bump")
 			{
 				FString MapBump;
-				if (!(Stream >> MapBump) || !TransformPath(Path, MapBump, MtlInfo.MapBump))
+				if (!ReadTextureFileName(Stream, MapBump) || !TransformPath(Path, MapBump, MtlInfo.MapBump))
 				{
 					HTR_LOG(Warning, "[MTL] {}:{}: invalid map_bump (or bump) '{}'", Path, LineNumber, Line);
 					return false;
