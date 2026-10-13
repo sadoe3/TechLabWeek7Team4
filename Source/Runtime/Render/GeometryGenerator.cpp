@@ -374,12 +374,12 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateCube(float Size, const FVe
 
 	TArray<TArray<uint32>> cubeFaces =
 	{
-		{ 0,1,2,3 }, //Front
-		{ 7,6,5,4 }, //Back
+		{ 1,2,3,0 }, //Front
+		{ 4,7,6,5 }, //Back
 		{ 1,5,6,2 }, //Top
-		{ 4,0,3,7 }, //Bottom
-		{ 4,5,1,0 }, //Left
-		{ 3,2,6,7 }, //Right
+		{ 3,7,4,0 }, //Bottom
+		{ 0,4,5,1 }, //Left
+		{ 2,6,7,3 }, //Right
 	};
 
 	TArray<FVector2> faceUVs =
