@@ -10,6 +10,7 @@
 #include "Editor/EditorUI/ImGuiRenderer.h"
 #include "Editor/Rendering/GridRenderer.h"
 #include "Editor/Rendering/SceneDepthRenderer.h"
+#include "Editor/Rendering/LightGridDebugRenderer.h"
 #include "Editor/Rendering/HeightFogRenderer.h"
 #include "Editor/Rendering/FXAARenderer.h"
 #include "Editor/Rendering/FireBallRenderer.h"
@@ -86,6 +87,7 @@ private:
 		bool bEnableFog = true;
 		bool bEnableFXAA = false;
 		bool bShowSceneDepth = false;
+		bool bLightGridDebug = false;
 		float SceneDepthRange = 1.0f;
 	};
 	// Common scene passes. Leaves SceneColor/Depth bound for caller overlays and EndRenderPass.
@@ -120,6 +122,7 @@ private:
 	TUniquePtr<FOutline> Outline;
 	TUniquePtr<FOutlineRenderer> OutlineRenderer;
 	TUniquePtr<FSceneDepthRenderer> SceneDepthRenderer;
+	TUniquePtr<FLightGridDebugRenderer> LightGridDebugRenderer;
 	TUniquePtr<FSkyboxRenderer> SkyboxRenderer;
 	TUniquePtr<FHeightFogRenderer> HeightFogRenderer;
 	TUniquePtr<FFXAARenderer> FXAARenderer;

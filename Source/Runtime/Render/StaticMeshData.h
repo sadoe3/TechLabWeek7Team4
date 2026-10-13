@@ -17,6 +17,7 @@ struct FStaticMaterialSlot
 	FString Name;
 	FVector4 BaseColor = FVector4(1, 1, 1, 1);
 	FString DiffuseTexturePath;
+	FString NormalMapTexturePath;
 };
 
 struct FLODSourceVertex
@@ -72,4 +73,7 @@ struct FStaticMeshData
 	void OptimizeTriangleOrderForVertexCache();
 
 	void BuildTriangleBVH();
+
+	// 각 정점 Tangent 계산
+	void CalculateTangents();
 };

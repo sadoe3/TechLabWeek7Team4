@@ -31,6 +31,10 @@ FShaderProgram::FShaderProgram(FVertexShader* InVertexShader, FPixelShader* InPi
 	:VertexShader(InVertexShader), PixelShader(InPixelShader)
 {
 }
+FShaderProgram::FShaderProgram(FComputeShader* InComputeShader)
+	: ComputeShader(InComputeShader)
+{
+}
 
 const FConstantBufferBinding* FShaderBindings::FindConstantBuffer(const FString& Name) const
 {
@@ -164,6 +168,17 @@ FPixelShader::FPixelShader(ID3D11Device* Device, const FShaderByteCode& ByteCode
 	{
 		return;
 	}
+
+	BindingReflection(ByteCode);
+}
+
+FComputeShader::FComputeShader(ID3D11Device* Device, const FShaderByteCode& ByteCode)
+{
+	Type = EShaderType::Compute;
+	if (!ByteCode.IsValid()) return;
+
+	if (FAILED(Device->CreateComputeShader(ByteCode.GetData(), ByteCode.GetSize(), nullptr, ComputeShader.GetAddressOf())))
+		return;
 
 	BindingReflection(ByteCode);
 }

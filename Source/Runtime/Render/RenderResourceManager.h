@@ -53,6 +53,7 @@ private:
 
 	TMap<FString, TUniquePtr<FVertexShader>> VertexShaderMap;
 	TMap<FString, TUniquePtr<FPixelShader>>  PixelShaderMap;
+	TMap<FString, TUniquePtr<FComputeShader>> ComputeShaderMap;
 	TMap<FString, TUniquePtr<FShaderProgram>> ShaderProgramMap;
 
 	TMap<EPSOType, TUniquePtr<FPipelineState>> PipelineStateMap;

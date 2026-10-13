@@ -63,8 +63,17 @@ public:
 	bool IsEnabled() const { return bEnabled; }
 	bool IsShown(bool bGameView) const { return bVisible && !(bGameView && bHiddenInGame); }
 	const FLightRenderData& GetRenderData() const { return RenderData; }
+	const FVector& GetCullingSphereCenter() const { return CullingSphereCenter; }
+	float GetCullingSphereRadius() const { return CullingSphereRadius; }
 
 private:
+	void UpdateSpotSphere(float Radius, float OuterAngle);
+	FVector CullingSphereCenter{};
+	float CullingSphereRadius = 0.0f;
+	float SpotSphereOffset = 0.0f;
+	float CachedSpotRadius = -1.0f;
+	float CachedSpotOuterAngle = -1.0f;
+
 	// UPointLightComponent* Component = nullptr;
 	ULightComponent* Component = nullptr;
 	ELightType LightType = ELightType::Point;

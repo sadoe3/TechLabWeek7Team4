@@ -39,48 +39,56 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 	// 렌더 큐 자체 정렬
 	RenderData.RenderQueue.Sort();
 
-	for (const FLightSceneProxy* Light : World->GetScene().GetLights()) // 월드에 있는 모든 라이트 정보 가져오기
+	// Point를 먼저 수집하고 Spot을 뒤에 붙여 셰이더의 배열 번호와 일치시킨다.
+	for (uint32 LightPass = 0; LightPass < 2; ++LightPass)
 	{
-		if (!Light || !Light->IsEnabled() || !Light->IsShown(View.bGameView)) continue;
-		const auto& Data = Light->GetRenderData();
+		for (const FLightSceneProxy* Light : World->GetScene().GetLights()) // 월드에 있는 모든 라이트 정보 가져오기
+		{
+			if (!Light || !Light->IsEnabled() || !Light->IsShown(View.bGameView)) continue;
+			if ((Light->GetLightType() == ELightType::Spot) != (LightPass == 1)) continue;
+			const auto& Data = Light->GetRenderData();
 
-		// TODO: 라이트 컬링
-
-		switch (Light->GetLightType())
-		{
-		case ELightType::Ambient:
-		{
-			if (RenderData.FrameLightData.AmbientLight.Intensity > 0.0f) continue;
-			if (const auto* AmbientData = std::get_if<FAmbientLightRenderData>(&Data))
+			switch (Light->GetLightType())
 			{
-				RenderData.FrameLightData.AmbientLight = *AmbientData;
-			}
-			break;
-		}
-		case ELightType::Directional:
-		{
-			if (static_cast<uint32>(RenderData.FrameLightData.DirectionalLights.Num()) >= MaxDirectionalLights) continue;
-			if (const auto* DirectionalData = std::get_if<FDirectionalLightRenderData>(&Data))
+			case ELightType::Ambient:
 			{
-				RenderData.FrameLightData.DirectionalLights.Add(*DirectionalData);
+				if (RenderData.FrameLightData.AmbientLight.Intensity > 0.0f) continue;
+				if (const auto* AmbientData = std::get_if<FAmbientLightRenderData>(&Data))
+				{
+					RenderData.FrameLightData.AmbientLight = *AmbientData;
+				}
+				break;
 			}
-		}
-		case ELightType::Point:
-		{
-			if (static_cast<uint32>(RenderData.FrameLightData.PointLights.Num()) >= MaxPointLights) continue;
-			if (const auto* PointData = std::get_if<FPointLightRenderData>(&Data))
+			case ELightType::Directional:
 			{
-				RenderData.FrameLightData.PointLights.Add(*PointData);
+				if (static_cast<uint32>(RenderData.FrameLightData.DirectionalLights.Num()) >= MaxDirectionalLights) continue;
+				if (const auto* DirectionalData = std::get_if<FDirectionalLightRenderData>(&Data))
+				{
+					RenderData.FrameLightData.DirectionalLights.Add(*DirectionalData);
+				}
+				break;
 			}
-		}
-		case ELightType::Spot:
-		{
-			if (static_cast<uint32>(RenderData.FrameLightData.SpotLights.Num()) >= MaxSpotLights) continue;
-			if (const auto* SpotData = std::get_if<FSpotLightRenderData>(&Data))
+			case ELightType::Point:
 			{
-				RenderData.FrameLightData.SpotLights.Add(*SpotData);
+				if (static_cast<uint32>(RenderData.FrameLightData.PointLights.Num()) >= MaxPointLights) continue;
+				if (const auto* PointData = std::get_if<FPointLightRenderData>(&Data))
+				{
+					RenderData.FrameLightData.PointLights.Add(*PointData);
+					RenderData.CullingLights.Add({ View.ViewMatrix.TransformPosition(Light->GetCullingSphereCenter()), Light->GetCullingSphereRadius() });
+				}
+				break;
 			}
-		}
+			case ELightType::Spot:
+			{
+				if (static_cast<uint32>(RenderData.FrameLightData.SpotLights.Num()) >= MaxSpotLights) continue;
+				if (const auto* SpotData = std::get_if<FSpotLightRenderData>(&Data))
+				{
+					RenderData.FrameLightData.SpotLights.Add(*SpotData);
+					RenderData.CullingLights.Add({ View.ViewMatrix.TransformPosition(Light->GetCullingSphereCenter()), Light->GetCullingSphereRadius() });
+				}
+				break;
+			}
+			}
 		}
 	}
 }
@@ -108,14 +116,19 @@ void FSceneRenderer::RenderToneMapDeferred(FRenderer* Renderer, const FDeferredV
 		Renderer->DrawToneMap(Targets.LightingHDR.get(), Targets.Depth.get());
 }
 
-void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height)
+bool FSceneRenderer::CullLights(FRenderer* Renderer, FForwardViewTargets& Targets, uint32 Width, uint32 Height)
+{
+	return Renderer && Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, View.ProjectionMatrix, RenderData.CullingLights.GetData(), static_cast<uint32>(RenderData.CullingLights.Num()));
+}
+
+void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height, bool bUseTileLights)
 {
 	if (!Renderer)
 		return;
 
 	RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
 	PrepareDrawData(Renderer, RenderData);
-	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData);
+	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr);
 	RenderCommand::EndRenderPass();
 }
 

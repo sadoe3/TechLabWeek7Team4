@@ -4,6 +4,7 @@ enum class EShaderType
 {
 	Vertex,
 	Pixel,
+	Compute,
 };
 
 enum class EViewportMode : uint8

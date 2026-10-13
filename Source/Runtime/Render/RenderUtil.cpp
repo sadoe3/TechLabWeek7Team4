@@ -3,7 +3,22 @@
 
 FShaderByteCode RenderUtil::CompileShader(FString Path, const char* EntryPoint, EShaderType ShaderType, const TArray<FShaderMacro>& Macros)
 {
-	const char* Target = (ShaderType == EShaderType::Vertex) ? "vs_5_0" : "ps_5_0";
+	const char* Target = nullptr;
+
+	switch (ShaderType)
+	{
+	case EShaderType::Vertex:
+		Target = "vs_5_0";
+		break;
+	case EShaderType::Pixel:
+		Target = "ps_5_0";
+		break;
+	case EShaderType::Compute:
+		Target = "cs_5_0";
+		break;
+	default:
+		return {};
+	}
 
 	uint32 Flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
@@ -76,7 +91,22 @@ FString RenderUtil::MakeMacroKey(const TArray<FShaderMacro>& Macros)
 FString RenderUtil::GetCsoPath(const FString& ShaderPath, EShaderType ShaderType, const TArray<FShaderMacro>& Macros)
 {
 	const fs::path Rel = fs::relative(ShaderPath, "Resources/Shader");
-	const char* Suffix = (ShaderType == EShaderType::Vertex) ? "_VS.cso" : "_PS.cso";
+
+	const char* Suffix = nullptr;
+	switch (ShaderType)
+	{
+	case EShaderType::Vertex:
+		Suffix = "_VS.cso";
+		break;
+	case EShaderType::Pixel:
+		Suffix = "_PS.cso";
+		break;
+	case EShaderType::Compute:
+		Suffix = "_CS.cso";
+		break;
+	default:
+		return {};
+	}
 
 	fs::path Out = fs::path("Intermediate/Shaders") / Rel.parent_path();
 	Out /= Rel.stem().generic_string() + MakeMacroKey(Macros) + Suffix;

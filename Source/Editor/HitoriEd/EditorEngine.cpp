@@ -163,10 +163,17 @@ bool UEditorEngine::Init() {
 	FireBallRenderer->Init(Renderer);
 
 	SettingsPanel = EditorUI->AddEditorPanel<FSettingsPanel>();
+	OutputLogPanel->SetLightGridDebugCallback([this](bool bEnabled)
+	{
+		SettingsPanel->GetMutableSettings().bLightGridDebug = bEnabled;
+		return true;
+	});
 
 	Outline = MakeUnique<FOutline>();
 
 	SystemFont = UAssetManager::GetAssetByPath<UFont>("Assets/Fonts/Pretendard.json");
+	LightGridDebugRenderer = MakeUnique<FLightGridDebugRenderer>();
+	LightGridDebugRenderer->Init(SystemFont);
 
 	TextRenderer = MakeUnique<FTextRenderer>();
 	TextRenderer->Init();
@@ -711,6 +718,7 @@ void UEditorEngine::RenderGameFrameForward(FForwardGameViewportClient* GameClien
 
 	FSceneRenderOptions Options;
 	Options.bEnableFXAA = SettingsPanel && SettingsPanel->GetSettings().bEnableFXAA;
+	Options.bLightGridDebug = SettingsPanel && SettingsPanel->GetSettings().bLightGridDebug;
 	// FDeferredViewTargets& Targets = GameClient->GetDeferredViewTargets();
 	FForwardViewTargets& Targets = GameClient->GetViewTargets();
 	if (!RenderSceneFrameForward(Targets, SceneView, SceneRenderer, GameClient->GetWorld(), Options))
@@ -809,10 +817,12 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	if (!Width || !Height || !Targets.IsValidFor(Width, Height))
 		return false;
 
-	// GBuffer -> HDR lighting -> skybox and tone mapping.
+	// Primitive 표시와 독립적으로 이번 뷰의 실제 라이트 목록을 갱신한다.
+	const bool bHasTileLights = SceneRenderer.CullLights(Renderer, Targets, Width, Height);
+
 	if (Options.bDrawPrimitives)
 	{
-		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height);
+		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height, bHasTileLights);
 	}
 	else
 		RenderCommand::ClearDepthStencil(DepthTarget);
@@ -841,13 +851,22 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	RenderSceneText(TargetWorld, SceneView);
 
 	if (Options.bShowSceneDepth && SceneDepthRenderer)
-		SceneDepthRenderer->OnRender(SceneView, DepthTarget, ColorTarget, Options.SceneDepthRange);
-	if (Options.bEnableFXAA && !Options.bShowSceneDepth && FXAARenderer &&
-		FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
 	{
-		// Both viewport types now exchange and bind the same final output target.
+		SceneDepthRenderer->OnRender(SceneView, DepthTarget, ColorTarget, Options.SceneDepthRange);
+	}
+
+	if (Options.bLightGridDebug)
+	{
+		LightGridDebugRenderer->OnRender(Targets.TileLightResources, ColorTarget, DepthTarget);
+	}
+
+	// 타일 경계와 작은 숫자가 흐려지지 않도록 디버그 화면에는 FXAA를 적용하지 않는다.
+	if (Options.bEnableFXAA && !Options.bShowSceneDepth && !Options.bLightGridDebug && FXAARenderer && FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
+	{
 		if (!Targets.SwapSceneColorAndBind(FXAARenderer->GetOutputTarget()))
+		{
 			RenderCommand::BindRenderPassNoClear(ColorTarget, DepthTarget, Width, Height);
+		}
 	}
 	return true;
 }
@@ -1030,6 +1049,7 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	Options.bEnableFog = ViewClient->GetViewportMode() == EViewportMode::Lit;
 	Options.bEnableFXAA = SettingsPanel->GetSettings().bEnableFXAA;
 	Options.bShowSceneDepth = !bIsPIE && ViewClient->IsSceneDepth();
+	Options.bLightGridDebug = SettingsPanel->GetSettings().bLightGridDebug;
 	Options.SceneDepthRange = ViewClient->GetMaxRange();
 	
 	FTexture2D* DepthTarget = nullptr;

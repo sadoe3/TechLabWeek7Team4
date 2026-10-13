@@ -103,7 +103,7 @@ void FRenderResourceManager::ScanShaders(const fs::path& ShaderRoot)
 		if (!Entry.is_regular_file()) continue;
 		if (Entry.path().extension() != ".hlsl") continue;
 
-		FString Path = Entry.path().generic_string();
+		const FString Path = Entry.path().generic_string();
 		LoadOrCompileShader(Path);
 	}
 }
@@ -112,6 +112,7 @@ void FRenderResourceManager::Shutdown()
 {
 	Get().VertexShaderMap.Empty();
 	Get().PixelShaderMap.Empty();
+	Get().ComputeShaderMap.Empty();
 	Get().ShaderProgramMap.Empty();
 }
 
@@ -138,7 +139,42 @@ FShaderProgram* FRenderResourceManager::GetShaderProgram(const FString& InPath, 
 
 
 void FRenderResourceManager::LoadOrCompileShader(const FString& Path, const TArray<FShaderMacro>& Macros)
-{ 
+{
+	// 스캔과 지연 로딩 모두 동일한 파일명 규칙으로 셰이더 종류를 결정한다.
+	const FString FileName = fs::path(Path).filename().generic_string();
+	// 현재는 세이더 파일명 앞에 CS_가 있으면 compute shader로 compile하도록 처리한다.
+	const bool bComputeShader = FileName.rfind("CS_", 0) == 0;
+	const FString ShaderKey = Path + RenderUtil::MakeMacroKey(Macros);
+
+	if (bComputeShader)
+	{
+		FString CSCSOPath;
+		FShaderByteCode CSCode = RenderUtil::GetOrCompile(Path, "mainCS", EShaderType::Compute, CSCSOPath, Macros);
+
+		if (!CSCode.IsValid())
+		{
+			HTR_LOG(Error, "[Shader] compile failed: {}", Path);
+			return;
+		}
+
+		TUniquePtr<FComputeShader> Cs = RenderCommand::CreateComputeShader(CSCode);
+
+		if (!Cs || !Cs->IsValid())
+		{
+			HTR_LOG(Error, "[Shader] device create failed: {}", Path);
+			return;
+		}
+
+		FComputeShader* CsRaw = Cs.get();
+
+		ComputeShaderMap[CSCSOPath] = std::move(Cs);
+		ShaderProgramMap[ShaderKey] = MakeUnique<FShaderProgram>(CsRaw);
+
+		HTR_LOG(Info, "[Shader] loaded: {}", Path);
+		return;
+	}
+
+
 	FString VSCSOPath;
 	FString PSCSOPath;
 	FShaderByteCode VSCode = RenderUtil::GetOrCompile(Path, "mainVS", EShaderType::Vertex, VSCSOPath, Macros);
@@ -164,8 +200,7 @@ void FRenderResourceManager::LoadOrCompileShader(const FString& Path, const TArr
 
 	VertexShaderMap[VSCSOPath] = std::move(Vs);
 	PixelShaderMap[PSCSOPath] = std::move(Ps);
-	ShaderProgramMap[Path + RenderUtil::MakeMacroKey(Macros)] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);
+	ShaderProgramMap[ShaderKey] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);
 
 	HTR_LOG(Info, "[Shader] loaded: {}", Path);
-
 }

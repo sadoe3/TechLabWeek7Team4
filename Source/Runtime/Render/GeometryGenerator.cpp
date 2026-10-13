@@ -102,6 +102,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreatePlane(float Size, const FV
 	PlaneMeshData->Indices.Add(2);
 
 	CalculateNormals(PlaneMeshData->Vertices, PlaneMeshData->Indices);
+	PlaneMeshData->CalculateTangents();
 	PlaneMeshData->AABB = CalculateAABB(PlaneMeshData->Vertices);
 
 	return PlaneMeshData;
@@ -163,6 +164,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateCone(float Radius, float H
 	}
 
 	CalculateNormals(ConeMeshData->Vertices, ConeMeshData->Indices);
+	ConeMeshData->CalculateTangents();
 	ConeMeshData->AABB = CalculateAABB(ConeMeshData->Vertices);
 
 	return ConeMeshData;
@@ -247,6 +249,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateCylinder(float Radius, flo
 	}
 
 	CalculateNormals(CylinderMeshData->Vertices, CylinderMeshData->Indices);
+	CylinderMeshData->CalculateTangents();
 	CylinderMeshData->AABB = CalculateAABB(CylinderMeshData->Vertices);
 
 	return CylinderMeshData;
@@ -263,6 +266,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateArrow(float BodyRadius, fl
 	Arrow->Append(*Head);
 
 	CalculateNormals(Arrow->Vertices, Arrow->Indices);
+	Arrow->CalculateTangents();
 	Arrow->AABB = CalculateAABB(Arrow->Vertices);
 
 	return Arrow;
@@ -279,6 +283,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateScaleBar(float BodyRadius,
 	Arrow->Append(*Head);
 
 	CalculateNormals(Arrow->Vertices, Arrow->Indices);
+	Arrow->CalculateTangents();
 	Arrow->AABB = CalculateAABB(Arrow->Vertices);
 
 	return Arrow;
@@ -331,6 +336,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateRing(float Radius, float T
 		}
 	}
 	CalculateNormals(Data->Vertices, Data->Indices);
+	Data->CalculateTangents();
 	Data->AABB = CalculateAABB(Data->Vertices);
 
 	return Data;
@@ -409,6 +415,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateCube(float Size, const FVe
 	}
 
 	CalculateNormals(CubeMeshData->Vertices, CubeMeshData->Indices);
+	CubeMeshData->CalculateTangents();
 	CubeMeshData->AABB = CalculateAABB(CubeMeshData->Vertices);
 
 	return CubeMeshData;
@@ -461,6 +468,7 @@ TUniquePtr<FStaticMeshData> FGeometryGenerator::CreateSphere(float Radius, uint3
 		}
 	}
 
+	SphereMeshData->CalculateTangents();
 	SphereMeshData->AABB = CalculateAABB(SphereMeshData->Vertices);
 
 	return SphereMeshData;
