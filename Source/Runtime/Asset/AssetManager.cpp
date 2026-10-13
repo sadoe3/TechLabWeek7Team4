@@ -72,6 +72,8 @@ namespace
 				return nullptr;
 			}
 			Material->BaseColor = Slot.BaseColor;
+			Material->SpecularColor = Slot.SpecularColor;
+			Material->Shininess = Slot.Shininess;
 			if (Material->BaseColor.W < 1.0f)
 			{
 				Material->PSOType = EPSOType::StaticMesh_Translucent;
@@ -295,6 +297,9 @@ void UAssetManager::CreateDefaultMaterial()
 {
 	UMaterial* DefaultMat = FObjectFactory::ConstructObject<UMaterial>();
 	DefaultMat->PSOType = EPSOType::StaticMesh_Opaque;
+	DefaultMat->BaseColor = FVector4(1, 1, 1, 1);
+	DefaultMat->SpecularColor = FVector(1, 1, 1);
+	DefaultMat->Shininess = 16.0f;
 	DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("WhiteTexture"));
 
 	DefaultMat->ParamBuffer = RenderCommand::CreateConstantBuffer(sizeof(FStaticMeshMaterialParams));

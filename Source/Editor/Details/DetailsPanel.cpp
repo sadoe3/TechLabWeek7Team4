@@ -524,7 +524,48 @@ namespace
 					
 					ImGui::TableNextRow();
 
-					// 6: UV Scroll Speed
+					// 6: Specular Color
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Specular Color");
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::SetNextItemWidth(-1.0f);
+					FVector TempSpecularColor = Effective ? Effective->SpecularColor : FVector(1.0f, 1.0f, 1.0f);
+					if (ImGui::ColorEdit3("##SpecularColor", &TempSpecularColor.X))
+					{
+						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+						if (Override)
+						{
+							Override->SpecularColor = TempSpecularColor;
+							MeshComponent->OnPropertyChanged("OverrideMaterials");
+							Effective = Override;
+						}
+					}
+
+					ImGui::TableNextRow();
+
+					// 7: Shininess
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Shininess");
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::SetNextItemWidth(-1.0f);
+
+					float TempShininess = Effective ? Effective->Shininess : 16.0f;
+					if (ImGui::DragFloat("##Shininess", &TempShininess, 1.0f, 0.0f, 1000.0f))
+					{
+						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+						if (Override)
+						{
+							Override->Shininess = TempShininess;
+							MeshComponent->OnPropertyChanged("OverrideMaterials");
+							Effective = Override;
+						}
+					}
+
+					ImGui::TableNextRow();
+
+					// 8: UV Scroll Speed
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("UV Scroll");
 
@@ -545,7 +586,7 @@ namespace
 
 					ImGui::TableNextRow();
 
-					// 7: Sampler State
+					// 9: Sampler State
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Sampler");
 
@@ -574,7 +615,7 @@ namespace
 
 					ImGui::TableNextRow();
 
-					// 8: Blend State
+					// 10: Blend State
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Blend Mode");
 

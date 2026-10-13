@@ -48,6 +48,8 @@ struct FObjMaterialInfo
 {
 	FString Name;
 	FVector Kd = FVector(1.0f, 1.0f, 1.0f);
+	FVector Ks = FVector(1.0f, 1.0f, 1.0f);
+	float Ns = 16.0f;
 	FString MapKd; // 저장소 루트 기준
 	FString MapBump; // Normal Map / Bump Map
 	float D = 1.0f;

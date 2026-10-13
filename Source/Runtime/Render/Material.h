@@ -9,6 +9,8 @@ class FShader;
 struct FStaticMeshMaterialParams
 {
 	FVector4 BaseColor;
+	FVector SpecularColor;
+	float Shininess;
 	FVector2 UVOffset;
 	FVector2 Padding;
 };
@@ -31,6 +33,8 @@ public:
 
 
 	FVector4 BaseColor = FVector4(1, 1, 1, 1);
+	FVector SpecularColor = FVector(1, 1, 1);
+	float Shininess = 16.0f;
 	FVector2 UVScrollSpeed = FVector2(0.0f, 0.0f);
 
 	bool bIsInstance = false;

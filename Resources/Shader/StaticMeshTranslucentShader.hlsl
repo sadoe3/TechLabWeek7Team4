@@ -12,6 +12,8 @@ cbuffer Worldconstants : register(b2)
 cbuffer MaterialParams : register(b1)
 {
     float4 BaseColor;
+    float3 SpecularColor;
+    float Shininess;
     float2 UVOffset;
     float2 Padding;
 };

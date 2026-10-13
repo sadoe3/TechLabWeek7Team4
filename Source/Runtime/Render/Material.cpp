@@ -32,6 +32,8 @@ UMaterial* UMaterial::CreateInstance(const UMaterial* Source)
 
 	Instance->Textures = Source->Textures;
 	Instance->BaseColor = Source->BaseColor;
+	Instance->SpecularColor = Source->SpecularColor;
+	Instance->Shininess = Source->Shininess;
 	Instance->UVScrollSpeed = Source->UVScrollSpeed;
 	Instance->PSOType = Source->PSOType;
 	Instance->SamplerState = Source->SamplerState;
@@ -78,6 +80,8 @@ json UMaterial::SaveMaterial(const UMaterial* Material)
 	// PSOType을 uint8 정수로 저장!
 	Out["PSOType"] = static_cast<uint8>(Material->PSOType);
 	Out["BaseColor"] = Material->BaseColor;
+	Out["SpecularColor"] = Material->SpecularColor; 
+	Out["Shininess"] = Material->Shininess;
 	Out["UVScrollSpeed"] = {
 		Material->UVScrollSpeed.X,
 		Material->UVScrollSpeed.Y
@@ -121,6 +125,16 @@ UMaterial* UMaterial::LoadMaterial(const json& In)
 	if (In.contains("BaseColor"))
 	{
 		In["BaseColor"].get_to(Instance->BaseColor);
+	}
+
+	if (In.contains("SpecularColor"))
+	{
+		In["SpecularColor"].get_to(Instance->SpecularColor);
+	}
+
+	if (In.contains("Shininess"))
+	{
+		Instance->Shininess = In["Shininess"].get<float>();
 	}
 
 	if (In.contains("Textures"))

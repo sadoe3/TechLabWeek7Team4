@@ -590,9 +590,11 @@ void FRenderer::UpdateMaterialParams(const FRenderPacket& RenderPacket)
 		const float TotalTime = EngineTimer::GetTotalTime();
 		FStaticMeshMaterialParams Params{};
 		Params.BaseColor = RenderPacket.Material->BaseColor;
+		Params.SpecularColor = RenderPacket.Material->SpecularColor;
+		Params.Shininess = RenderPacket.Material->Shininess;
 		Params.UVOffset = RenderPacket.Material->UVScrollSpeed * TotalTime;
 		RenderCommand::UpdateBufferData(RenderPacket.Material->ParamBuffer.get(), &Params, sizeof(FStaticMeshMaterialParams));
-		RenderCommand::BindConstantBuffer(1, RenderPacket.Material->ParamBuffer.get(), EShaderBindFlagBits::Pixel);
+		RenderCommand::BindConstantBuffer(1, RenderPacket.Material->ParamBuffer.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 		break;
 	}
 	case EPSOType::Particle_AlphaBlend:
@@ -601,7 +603,7 @@ void FRenderer::UpdateMaterialParams(const FRenderPacket& RenderPacket)
 		if (RenderPacket.MaterialParamData != nullptr)
 		{
 			RenderCommand::UpdateBufferData(RenderPacket.Material->ParamBuffer.get(), RenderPacket.MaterialParamData, RenderPacket.MaterialParamDataSize);
-			RenderCommand::BindConstantBuffer(1, RenderPacket.Material->ParamBuffer.get(), EShaderBindFlagBits::Pixel);
+			RenderCommand::BindConstantBuffer(1, RenderPacket.Material->ParamBuffer.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 		}
 		break;
 	}

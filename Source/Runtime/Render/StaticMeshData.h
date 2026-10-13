@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Vertex.h"
 #include "Math/BVH.h"
@@ -16,6 +16,8 @@ struct FStaticMaterialSlot
 {
 	FString Name;
 	FVector4 BaseColor = FVector4(1, 1, 1, 1);
+	FVector SpecularColor = FVector(1, 1, 1);
+	float Shininess = 16.0f;
 	FString DiffuseTexturePath;
 	FString NormalMapTexturePath;
 };
