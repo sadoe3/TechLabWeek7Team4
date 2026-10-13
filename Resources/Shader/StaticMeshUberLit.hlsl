@@ -119,6 +119,8 @@ struct PS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD1;
+	float3 Diffuse : TEXCOORD2;
+	float3 Specular : TEXCOORD3;
 	float3 Tangent : TANGENT;
 };
 Texture2D Texture : register(t0);
@@ -133,30 +135,30 @@ SamplerState Sampler : register(s0);
 
 static const float Pi = 3.14159265359f;
 
-float3 Diffuse(float3 Kd)
+float3 Diffuse()
 {
-	return Kd / Pi;
+	return 1.0f / Pi;
 }
 
-float3 SpecularPhong(float3 Ks, float3 R, float3 V, float Shininess)
+float3 SpecularPhong(float3 R, float3 V, float Shininess)
 {
 	float RdotV = saturate(dot(R, V));
-	return Ks * pow(RdotV, Shininess) * (Shininess + 2.0f) / (2.0f * Pi);
+	return pow(RdotV, Shininess) * (Shininess + 2.0f) / (2.0f * Pi);
 }
 
-float3 SpecularBlinnPhong(float3 Ks, float3 N, float3 H, float Shininess)
+float3 SpecularBlinnPhong(float3 N, float3 H, float Shininess)
 {
 	float NdotH = saturate(dot(N, H));
-	return Ks * pow(NdotH, Shininess) * (Shininess + 8.0f) / (8.0f * Pi);
+	return pow(NdotH, Shininess) * (Shininess + 8.0f) / (8.0f * Pi);
 }
 
-float3 Specular(float3 Ks, float3 N, float3 L, float3 V, float Shininess)
+float3 Specular(float3 N, float3 L, float3 V, float Shininess)
 {
 #if SPECULAR_MODEL == SPECULAR_PHONG
-	return SpecularPhong(Ks, reflect(-L, N), V, Shininess);
+	return SpecularPhong(reflect(-L, N), V, Shininess);
 #elif SPECULAR_MODEL == SPECULAR_BLINN_PHONG
 	float3 H = normalize(L + V);
-	return SpecularBlinnPhong(Ks, N, H, Shininess);
+	return SpecularBlinnPhong(N, H, Shininess);
 #endif
 	return float3(0.0f, 0.0f, 0.0f);
 }
@@ -182,13 +184,13 @@ float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float 
 	return AttenuationMask * AttenuationMask;
 }
 
-float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 View, float2 ScreenPosition)
+float3 CalculateDiffuse(float3 Normal, float3 Position, float3 View, float2 ScreenPosition)
 {
 #if LIGHTING_ENABLED == 0
 	return Albedo;
 #endif
 	
-	float3 FinalColor = AmbientLight.Color * AmbientLight.Intensity * Albedo;
+	float3 FinalColor = AmbientLight.Color * AmbientLight.Intensity;
 	
 	for (uint i = 0; i < NumDirectionalLights; ++i)
 	{
@@ -196,8 +198,7 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 		
 		float3 LightDir = -normalize(Light.Direction);
 		float NdotL = saturate(dot(Normal, LightDir));
-		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse(Albedo);
-		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
+		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse();
 	}
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
@@ -235,8 +236,7 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 			LightDir /= max(Distance, 0.0001f);
 
 			float NdotL = saturate(dot(Normal, LightDir));
-			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Diffuse(Albedo);
-			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
+			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Diffuse();
 		}
 		else
 		{
@@ -253,8 +253,83 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
 
 			float NdotL = saturate(dot(Normal, LightDir));
-			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse(Albedo);
-			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
+			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse();
+		}
+	}
+
+	return FinalColor;
+}
+
+float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 ScreenPosition)
+{
+#if LIGHTING_ENABLED == 0
+	return Albedo;
+#endif
+	
+	float3 FinalColor = float3(0.0f, 0.0f, 0.0f);
+	
+	for (uint i = 0; i < NumDirectionalLights; ++i)
+	{
+		DirectionalLightInfo Light = DirectionalLights[i];
+		
+		float3 LightDir = -normalize(Light.Direction);
+		float NdotL = saturate(dot(Normal, LightDir));
+		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(Normal, LightDir, View, 40.0f);
+	}
+	
+	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
+	uint LightCount = NumPointLights + NumSpotLights;
+	uint ListOffset = 0;
+#if PER_VERTEX == 0 && LIGHTING_ENABLED == 1
+	// CS_TileLightCulling.hlsl과 같은 16픽셀 타일. SV_POSITION은 뷰포트 내부 픽셀 좌표다.
+	if (TileCountX > 0)
+	{
+		uint2 Tile = uint2(ScreenPosition) / 16;
+		uint TileIndex = Tile.y * TileCountX + Tile.x;
+		LightCount = min(TileLightCount[TileIndex], MaxLightsPerTile);
+		ListOffset = TileIndex * MaxLightsPerTile;
+	}
+#endif
+	for (uint i = 0; i < LightCount; ++i)
+	{
+		uint LightIndex = i;
+#if PER_VERTEX == 0 && LIGHTING_ENABLED == 1
+		if (TileCountX > 0)
+			LightIndex = TileLightIndices[ListOffset + i];
+#endif
+		// 컬링 입력은 Point 배열 다음 Spot 배열 순서다.
+		if (LightIndex < NumPointLights)
+		{
+			PointLightInfo Light = PointLights[LightIndex];
+
+			float3 LightDir = Light.Location - Position;
+			float DistanceSquared = dot(LightDir, LightDir);
+			float Attenuation = CalculateDistanceAttenuation(DistanceSquared, Light.AttenuationRadius);
+			if (Attenuation <= 0.0f)
+				continue;
+
+			float Distance = sqrt(DistanceSquared);
+			LightDir /= max(Distance, 0.0001f);
+
+			float NdotL = saturate(dot(Normal, LightDir));
+			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, 40.0f);
+		}
+		else
+		{
+			SpotLightInfo Light = SpotLights[LightIndex - NumPointLights];
+
+			float3 LightDir = Light.Location - Position;
+			float DistanceSquared = dot(LightDir, LightDir);
+			float DistanceAttenuation = CalculateDistanceAttenuation(DistanceSquared, Light.AttenuationRadius);
+
+			float Distance = sqrt(DistanceSquared);
+			LightDir /= max(Distance, 0.0001f);
+
+			float Cos = dot(-LightDir, normalize(Light.Direction));
+			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
+
+			float NdotL = saturate(dot(Normal, LightDir));
+			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, 40.0f);
 		}
 	}
 
@@ -279,13 +354,14 @@ PS_INPUT mainVS(VS_INPUT Input)
 	Output.WorldPosition = mul(float4(Input.Position, 1.0f), World).xyz;
 	Output.Position = mul(float4(Output.WorldPosition, 1.0f), VP);
 	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), World).xyz); // TODO: 비균등 스케일 고려 필요
-	Output.Tangent = mul(Input.Tangent, (float3x3)World);
+	Output.Color = Input.Color;
 	Output.UV = Input.UV;
+	Output.Tangent = mul(Input.Tangent, (float3x3)World);
 	
 #if PER_VERTEX == 1
-	Output.Color = float4(CalculateLighting(float3(1.0f, 1.0f, 1.0f), Output.Normal, Output.WorldPosition, normalize(CameraPosition - Output.WorldPosition), float2(0.0f, 0.0f)), 1.0f);
-#else
-	Output.Color = Input.Color;
+	float3 ViewDir = normalize(CameraPosition - Output.WorldPosition);
+	Output.Diffuse = CalculateDiffuse(Output.Normal, Output.WorldPosition, ViewDir, float2(0.0f, 0.0f));
+	Output.Specular = CalculateSpecular(Output.Normal, Output.WorldPosition, ViewDir, float2(0.0f, 0.0f));
 #endif
 	
 	return Output;
@@ -295,17 +371,20 @@ float4 mainPS(PS_INPUT Input) : SV_TARGET
 {
 	float4 TexColor = Texture.Sample(Sampler, Input.UV + UVOffset);
 	float4 Albedo = TexColor * BaseColor;
+	
 #if PER_VERTEX == 1
-	return Albedo * Input.Color;
+	return float4(Albedo.rgb * Input.Diffuse + Input.Specular, Albedo.a);
 #else
 	float3 NormalDir = normalize(Input.Normal);
+	
 #if NORMAL_MAP_ENABLED == 1
 	float3 SampledNormalMap = NormalMap.Sample(Sampler, Input.UV + UVOffset).rgb;
 	NormalDir = CalculateNormalMapping(SampledNormalMap, Input.Normal, Input.Tangent);
 #endif
 	float3 ViewDir = normalize(CameraPosition - Input.WorldPosition);
-	float3 Color = CalculateLighting(Albedo.rgb, NormalDir, Input.WorldPosition, ViewDir, Input.Position.xy);
+	float3 Diffuse = CalculateDiffuse(NormalDir, Input.WorldPosition, ViewDir, Input.Position.xy);
+	float3 Specular = CalculateSpecular(NormalDir, Input.WorldPosition, ViewDir, Input.Position.xy);
 	
-	return float4(Color, Albedo.a);
+	return float4(Albedo.rgb * Diffuse + Specular, Albedo.a);
 #endif
 }
