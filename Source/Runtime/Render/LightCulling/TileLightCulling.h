@@ -7,6 +7,8 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
+inline constexpr uint32 LIGHT_CULLING_TILE_SIZE = 64;   // tile = 64x64
+
 struct FCullingLight
 {
     FVector SphereCenter;
@@ -22,7 +24,8 @@ struct FTileCullingConstants
     FMatrix Projection;
 
     uint32 MaxLightsPerTile = 0;
-    uint32 Padding[3] = {};
+    uint32 TileSize = LIGHT_CULLING_TILE_SIZE;
+    uint32 Padding[2] = {};
 };
 
 
@@ -43,7 +46,7 @@ private:
     // 타일 컬링 상수를 업로드할 버퍼
     TUniquePtr<FConstantBuffer> ConstantsBuffer;
 
-    const uint32 MaxLightsPerTile = 64;
+    const uint32 MaxLightsPerTile = 64;         // 이 값은 tile size와 관련없이 임의로 정할 수 있는 값이다
 };
 
 

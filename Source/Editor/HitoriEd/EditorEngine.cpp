@@ -743,6 +743,10 @@ void UEditorEngine::RenderGameFrameForward(FForwardGameViewportClient* GameClien
 				!SceneView.bIsPerspective);
 		}
 	}
+	// FXAA와 SIE 오버레이 이후 최종 컬러 위에 표시한다.
+	if (Options.bLightGridDebug)
+		LightGridDebugRenderer->OnRender(Targets.TileLightResources, Targets.SceneColor.get(), DepthTarget);
+
 	RenderCommand::EndRenderPass();
 }
 
@@ -855,13 +859,7 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 		SceneDepthRenderer->OnRender(SceneView, DepthTarget, ColorTarget, Options.SceneDepthRange);
 	}
 
-	if (Options.bLightGridDebug)
-	{
-		LightGridDebugRenderer->OnRender(Targets.TileLightResources, ColorTarget, DepthTarget);
-	}
-
-	// 타일 경계와 작은 숫자가 흐려지지 않도록 디버그 화면에는 FXAA를 적용하지 않는다.
-	if (Options.bEnableFXAA && !Options.bShowSceneDepth && !Options.bLightGridDebug && FXAARenderer && FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
+	if (Options.bEnableFXAA && !Options.bShowSceneDepth && FXAARenderer && FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
 	{
 		if (!Targets.SwapSceneColorAndBind(FXAARenderer->GetOutputTarget()))
 		{
@@ -1152,6 +1150,13 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 		if (SettingsPanel->GetSettings().bShowUUID) {
 			RenderActorUUIDs(SceneView);
 		}
+	}
+
+	// FXAA와 에디터 오버레이 이후에 그려 숫자와 타일 경계를 유지한다.
+	if (Options.bLightGridDebug)
+	{
+		FForwardViewTargets& Targets = static_cast<FForwardEditorViewportClient*>(ViewClient)->GetViewTargets();
+		LightGridDebugRenderer->OnRender(Targets.TileLightResources, Targets.SceneColor.get(), DepthTarget);
 	}
 
 	RenderCommand::EndRenderPass();
