@@ -10,8 +10,4 @@ void USpotLightComponent::OnPropertyChanged(const FString& PropertyName)
 		OuterConeAngle = FMath::Clamp(OuterConeAngle, 1.0f, 80.0f);
 		InnerConeAngle = FMath::Clamp(InnerConeAngle, 1.0f, OuterConeAngle);
 	}
-	else if (PropertyName == "Falloff" && Falloff < 0.0f)
-	{
-		Falloff = 0.0f;
-	}
 }
