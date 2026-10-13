@@ -7,7 +7,7 @@ AAmbientLightActor::AAmbientLightActor()
 {
 	BillboardComponent = CreateDefaultSubobject<UBillboardComponent>("UBillboardComponent");
 	SetRootComponent(BillboardComponent);
-	if (UTexture2D* LightIcon = UAssetManager::Get().LoadTexture("Editor/Icon/PointLight_64x.png"))
+	if (UTexture2D* LightIcon = UAssetManager::Get().LoadTexture("Editor/Icon/SkyLight.png"))
 	{
 		BillboardComponent->SetSprite(LightIcon);
 	}

@@ -1,0 +1,239 @@
+{
+    "Actors": [
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            null
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                -15.995384216308594,
+                                0.0853738784790039,
+                                -0.4215426445007324
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                44.69078063964844,
+                                76.56965637207031,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "ADirectionalLightActor",
+            "Components": [
+                {
+                    "Class": "UBillboardComponent",
+                    "Name": "UBillboardComponent_0",
+                    "Properties": {
+                        "Material": {
+                            "Base": "BillboardMaterial",
+                            "BaseColor": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "PSOType": 14,
+                            "SamplerState": "LinearClamp",
+                            "Textures": [
+                                "Editor/Icon/PointLight_64x.png"
+                            ],
+                            "UVScrollSpeed": [
+                                0.0,
+                                0.0
+                            ]
+                        },
+                        "Transform": {
+                            "Location": [
+                                -12.611495018005371,
+                                17.599395751953125,
+                                3.392646074295044
+                            ],
+                            "Rotation": [
+                                34.19501495361328,
+                                -129.9145050048828,
+                                -34.067928314208984
+                            ],
+                            "Scale": [
+                                0.9086827039718628,
+                                0.9086827039718628,
+                                0.9122785329818726
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                },
+                {
+                    "Class": "UDirectionalLightComponent",
+                    "Name": "UDirectionalLightComponent_0",
+                    "Properties": {
+                        "Intensity": 4.199999809265137,
+                        "LightColor": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bEnabled": true,
+                        "bHiddenInGame": false,
+                        "bShowLightBounds": true,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Textures": [
+                                    "Assets/SkySphere/Sky.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                -24.47467613220215,
+                                18.965023040771484,
+                                4.140161037445068
+                            ],
+                            "Rotation": [
+                                -0.12950769066810608,
+                                1.6331990957260132,
+                                -0.37012168765068054
+                            ],
+                            "Scale": [
+                                7.0570502281188965,
+                                7.0570502281188965,
+                                7.024059295654297
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Textures": [
+                                    "Assets/SkySphere/Sky.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Sphere",
+                        "Transform": {
+                            "Location": [
+                                -12.752723693847656,
+                                2.211348533630371,
+                                2.06746506690979
+                            ],
+                            "Rotation": [
+                                -0.4045937955379486,
+                                -0.0028888238593935966,
+                                0.14417840540409088
+                            ],
+                            "Scale": [
+                                4.191199779510498,
+                                4.191199779510498,
+                                3.753666400909424
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        }
+    ],
+    "Version": 2
+}

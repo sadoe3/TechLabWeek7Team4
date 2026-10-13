@@ -7,7 +7,7 @@ ADirectionalLightActor::ADirectionalLightActor()
 {
 	BillboardComponent = CreateDefaultSubobject<UBillboardComponent>("UBillboardComponent");
 	SetRootComponent(BillboardComponent);
-	if (UTexture2D* LightIcon = UAssetManager::Get().LoadTexture("Editor/Icon/PointLight_64x.png"))
+	if (UTexture2D* LightIcon = UAssetManager::Get().LoadTexture("Editor/Icon/S_LightDirectional.png"))
 	{
 		BillboardComponent->SetSprite(LightIcon);
 	}

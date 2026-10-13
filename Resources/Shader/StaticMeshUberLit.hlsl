@@ -153,7 +153,7 @@ float3 SpecularBlinnPhong(float3 Ks, float3 N, float3 H, float Shininess)
 float3 Specular(float3 Ks, float3 N, float3 L, float3 V, float Shininess)
 {
 #if SPECULAR_MODEL == SPECULAR_PHONG
-	return SpecularPhong(Ks, reflect(L, N), V, Shininess);
+	return SpecularPhong(Ks, reflect(-L, N), V, Shininess);
 #elif SPECULAR_MODEL == SPECULAR_BLINN_PHONG
 	float3 H = normalize(L + V);
 	return SpecularBlinnPhong(Ks, N, H, Shininess);
@@ -203,7 +203,7 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 		float3 LightDir = normalize(Light.Direction);
 		float NdotL = saturate(dot(Normal, -LightDir));
 		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse(Albedo);
-		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 40.0f);
+		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 32.0f);
 	}
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
@@ -240,9 +240,9 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 			float Distance = sqrt(DistanceSquared);
 			LightDir /= max(Distance, 0.0001f);
 
-			float NdotL = saturate(dot(Normal, LightDir));
+			float NdotL = saturate(dot(Normal, -LightDir));
 			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Diffuse(Albedo);
-			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
+			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 32.0f);
 		}
 		else
 		{
@@ -264,7 +264,7 @@ float3 CalculateLighting(float3 Albedo, float3 Normal, float3 Position, float3 V
 
 			float NdotL = saturate(dot(Normal, LightDir));
 			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse(Albedo);
-			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, LightDir, View, 40.0f);
+			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(float3(1.0f, 1.0f, 1.0f), Normal, -LightDir, View, 32.0f);
 		}
 	}
 
