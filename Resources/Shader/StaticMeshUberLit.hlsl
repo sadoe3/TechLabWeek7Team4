@@ -72,7 +72,7 @@ struct SpotLightInfo
 	float3 Direction;
 	float InnerConeAngle;
 	float OuterConeAngle;
-	float2 Padding;
+	float3 Padding;
 };
 
 cbuffer FrameConstants : register(b0)
@@ -175,7 +175,7 @@ float CalculateDistanceAttenuation(float DistanceSquared, float Radius)
 	float AttenuationFade = saturate(1.0f - NormalizedDistanceSquared * NormalizedDistanceSquared);
 	// 최소 거리 0.01(엔진 좌표 단위). 광원 위치의 0 나눗셈과 근거리 발산을 제한한다.
 	const float MinDistanceSquared = 0.0001f;
-    return AttenuationFade * AttenuationFade / max(DistanceSquared, MinDistanceSquared);
+	return AttenuationFade * AttenuationFade / max(DistanceSquared, MinDistanceSquared);
 }
 
 float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float OuterConeAngle)
@@ -183,7 +183,7 @@ float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float 
 	float CosOuter = cos(OuterConeAngle);
 	float CosInner = cos(InnerConeAngle);
 	
-	float AttenuationMask = saturate((CosAngle - CosOuter) / (CosInner - CosOuter));
+	float AttenuationMask = saturate((CosAngle - CosOuter) / max(CosInner - CosOuter, 0.0001f));
 	
 	return AttenuationMask * AttenuationMask;
 }
@@ -285,10 +285,10 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 	uint LightCount = NumPointLights + NumSpotLights;
 	uint ListOffset = 0;
 #if PER_VERTEX == 0 && LIGHTING_ENABLED == 1
-	// CS_TileLightCulling.hlsl과 같은 16픽셀 타일. SV_POSITION은 뷰포트 내부 픽셀 좌표다.
+	// CPU가 전달한 화면 타일 크기. SV_POSITION은 뷰포트 내부 픽셀 좌표다.
 	if (TileCountX > 0)
 	{
-		uint2 Tile = uint2(ScreenPosition) / 16;
+		uint2 Tile = uint2(ScreenPosition) / TileSize;
 		uint TileIndex = Tile.y * TileCountX + Tile.x;
 		LightCount = min(TileLightCount[TileIndex], MaxLightsPerTile);
 		ListOffset = TileIndex * MaxLightsPerTile;
