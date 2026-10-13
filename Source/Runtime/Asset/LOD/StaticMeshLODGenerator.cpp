@@ -1141,6 +1141,8 @@ namespace
             Out.Vertices[I].Normal = NormalSums[I].Normalized();
         }
 
+        Out.CalculateTangents();
+
         FVector Min = Out.Vertices[0].Position;
         FVector Max = Min;
 
