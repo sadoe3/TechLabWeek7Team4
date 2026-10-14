@@ -137,22 +137,21 @@ void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardView
 	if (!Renderer)
 		return;
 
-	// 프리패스 깊이는 유지하고 HDR 색상만 초기화한다.
-	RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), nullptr, Width, Height);
-	RenderCommand::BindRenderPassNoClear(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
-	// 프리패스에서 준비한 동일한 메시 묶음과 오브젝트 상수를 재사용한다.
-	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr, true);
-
 	if (bWorldNormalMode)
 	{
 		if (!RenderCommand::BeginWorldNormalPass(Targets, Width, Height))
 			return;
 	}
 	else
-		RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
+	{
+		// 프리패스 깊이는 유지하고 HDR 색상만 초기화한다.
+		RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), nullptr, Width, Height);
+		RenderCommand::BindRenderPassNoClear(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
+	}
 
-	PrepareDrawData(Renderer, RenderData);
-	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr);
+	// 프리패스에서 준비한 동일한 메시 묶음과 오브젝트 상수를 재사용한다.
+	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr, true);
+
 	RenderCommand::EndRenderPass();
 }
 

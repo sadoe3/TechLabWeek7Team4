@@ -277,7 +277,6 @@ bool RenderCommand::BeginWorldNormalPass(const FForwardViewTargets& Targets, uin
 
 	Context->ClearRenderTargetView(RTVs[0], ClearColor);
 	Context->ClearRenderTargetView(RTVs[1], ClearColor);
-	Context->ClearDepthStencilView(DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	Context->OMSetRenderTargets(2, RTVs, DSV);
 	SetViewport(0, 0, Width, Height);
 	return true;
