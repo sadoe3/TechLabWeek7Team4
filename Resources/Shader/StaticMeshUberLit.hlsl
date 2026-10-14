@@ -205,7 +205,7 @@ float3 CalculateDiffuse(float3 Normal, float3 Position, float3 View, float2 Scre
 		float3 LightDir = -normalize(Light.Direction);
 		float NdotL = saturate(dot(Normal, LightDir));
 		FinalColor += NdotL * Light.Color * Light.Intensity * Diffuse();
-	}
+    }
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
 	uint LightCount = NumPointLights + NumSpotLights;
@@ -243,7 +243,7 @@ float3 CalculateDiffuse(float3 Normal, float3 Position, float3 View, float2 Scre
 
 			float NdotL = saturate(dot(Normal, LightDir));
 			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Diffuse();
-		}
+        }
 		else
 		{
 			SpotLightInfo Light = SpotLights[LightIndex - NumPointLights];
@@ -259,7 +259,7 @@ float3 CalculateDiffuse(float3 Normal, float3 Position, float3 View, float2 Scre
 			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
 
 			float NdotL = saturate(dot(Normal, LightDir));
-			FinalColor += Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse();
+			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Diffuse();
 		}
 	}
 
@@ -290,7 +290,7 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 		
 		float NdotL = saturate(dot(Normal, LightDir));
 		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(Normal, LightDir, View, Shininess, Normalization);
-	}
+    }
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
 	uint LightCount = NumPointLights + NumSpotLights;
@@ -328,7 +328,7 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 			
 			float NdotL = saturate(dot(Normal, LightDir));
 			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
-		}
+        }
 		else
 		{
 			SpotLightInfo Light = SpotLights[LightIndex - NumPointLights];
@@ -345,7 +345,7 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 			
 			float NdotL = saturate(dot(Normal, LightDir));
 			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
-		}
+        }
 	}
 
 	return FinalColor;

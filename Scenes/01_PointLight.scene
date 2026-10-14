@@ -17,6 +17,12 @@
                             ],
                             "PSOType": 14,
                             "SamplerState": "LinearClamp",
+                            "Shininess": 16.0,
+                            "SpecularColor": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
                             "Textures": [
                                 "Editor/Icon/SpotLight_64x.png"
                             ],
@@ -27,14 +33,14 @@
                         },
                         "Transform": {
                             "Location": [
-                                3.561483383178711,
-                                -21.454526901245117,
-                                13.098528861999512
+                                -1.0060756206512451,
+                                -21.349506378173828,
+                                12.065320014953613
                             ],
                             "Rotation": [
-                                83.63624572753906,
-                                157.72596740722656,
-                                158.28866577148438
+                                77.42491149902344,
+                                14.03592586517334,
+                                14.877275466918945
                             ],
                             "Scale": [
                                 2.561215877532959,
@@ -52,7 +58,6 @@
                     "Name": "USpotLightComponent_0",
                     "Properties": {
                         "AttenuationRadius": 26.700000762939453,
-                        "Falloff": 0.20000000298023224,
                         "InnerConeAngle": 20.993999481201172,
                         "Intensity": 225.1999969482422,
                         "LightColor": [
@@ -108,6 +113,12 @@
                                 ],
                                 "PSOType": 0,
                                 "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
                                 "Textures": [
                                     "Assets/brick_wall.png"
                                 ],
@@ -163,6 +174,12 @@
                                 ],
                                 "PSOType": 0,
                                 "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
                                 "Textures": [
                                     "Assets/brick_wall.png"
                                 ],
@@ -217,6 +234,12 @@
                             ],
                             "PSOType": 14,
                             "SamplerState": "LinearClamp",
+                            "Shininess": 16.0,
+                            "SpecularColor": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
                             "Textures": [
                                 "Editor/Icon/PointLight_64x.png"
                             ],
@@ -303,6 +326,12 @@
                             ],
                             "PSOType": 14,
                             "SamplerState": "LinearClamp",
+                            "Shininess": 16.0,
+                            "SpecularColor": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
                             "Textures": [
                                 "Editor/Icon/PointLight_64x.png"
                             ],
@@ -338,7 +367,7 @@
                     "Name": "UPointLightComponent_0",
                     "Properties": {
                         "AttenuationRadius": 11.399999618530273,
-                        "Intensity": 33.900001525878906,
+                        "Intensity": 243.39999389648438,
                         "LightColor": [
                             1.0,
                             1.0,
@@ -365,6 +394,42 @@
                         "bEnabled": true,
                         "bHiddenInGame": false,
                         "bShowLightBounds": true,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                -5.533712387084961,
+                                0.0,
+                                2.340407371520996
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
                         "bVisible": true
                     }
                 }

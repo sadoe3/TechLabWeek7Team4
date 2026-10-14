@@ -11,42 +11,6 @@
                         "StaticMesh": "Cube",
                         "Transform": {
                             "Location": [
-                                30.77259635925293,
-                                0.44459211826324463,
-                                12.853426933288574
-                            ],
-                            "Rotation": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "Scale": [
-                                1.0,
-                                87.94466400146484,
-                                29.761754989624023
-                            ]
-                        },
-                        "bAutoActivate": true,
-                        "bHiddenInGame": false,
-                        "bVisible": true
-                    }
-                }
-            ],
-            "Properties": {
-                "bActorEnableCollision": true
-            }
-        },
-        {
-            "Class": "AStaticMeshActor",
-            "Components": [
-                {
-                    "Class": "UStaticMeshComponent",
-                    "Name": "UPrimitiveComponent_0",
-                    "Properties": {
-                        "OverrideMaterials": [],
-                        "StaticMesh": "Cube",
-                        "Transform": {
-                            "Location": [
                                 -0.6599960327148438,
                                 0.0853738784790039,
                                 0.2242870330810547
@@ -89,6 +53,12 @@
                             ],
                             "PSOType": 14,
                             "SamplerState": "LinearClamp",
+                            "Shininess": 16.0,
+                            "SpecularColor": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
                             "Textures": [
                                 "Editor/Icon/SkyLight.png"
                             ],
@@ -218,6 +188,42 @@
                                 1.0,
                                 1.0,
                                 1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                12.026103019714355
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                5.359737873077393,
+                                7.57988166809082,
+                                4.897156715393066
                             ]
                         },
                         "bAutoActivate": true,
