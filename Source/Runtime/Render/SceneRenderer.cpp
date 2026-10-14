@@ -70,7 +70,6 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 			}
 			case ELightType::Point:
 			{
-				if (static_cast<uint32>(RenderData.FrameLightData.PointLights.Num()) >= MaxPointLights) continue;
 				if (const auto* PointData = std::get_if<FPointLightRenderData>(&Data))
 				{
 					RenderData.FrameLightData.PointLights.Add(*PointData);
@@ -80,7 +79,6 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 			}
 			case ELightType::Spot:
 			{
-				if (static_cast<uint32>(RenderData.FrameLightData.SpotLights.Num()) >= MaxSpotLights) continue;
 				if (const auto* SpotData = std::get_if<FSpotLightRenderData>(&Data))
 				{
 					RenderData.FrameLightData.SpotLights.Add(*SpotData);
@@ -89,6 +87,11 @@ void FSceneRenderer::InitViews(FRenderer* Renderer)
 				break;
 			}
 			}
+		}
+
+		if (Renderer)
+		{
+			Renderer->UploadLocalLights(RenderData.FrameLightData);
 		}
 	}
 }
@@ -162,7 +165,7 @@ void FSceneRenderer::RenderToneMapForward(FRenderer* Renderer, const FForwardVie
 }
 
 // 반투명 렌더링
-void FSceneRenderer::RenderTranslucent(FRenderer* Renderer, FConstantBuffer* FogConstants)
+void FSceneRenderer::RenderTranslucent(FRenderer* Renderer, FConstantBuffer* FogConstants, const FTileLightCullingResources* TileLights)
 {
 	if (!Renderer)
 	{
@@ -171,7 +174,7 @@ void FSceneRenderer::RenderTranslucent(FRenderer* Renderer, FConstantBuffer* Fog
 
 	RenderCommand::BindConstantBuffer(3, FogConstants, EShaderBindFlagBits::Pixel);
 	PrepareDrawData(Renderer, RenderData);
-	Renderer->RenderTranslucent(View, RenderData.RenderQueue, &RenderData.FrameLightData);
+	Renderer->RenderTranslucent(View, RenderData.RenderQueue, &RenderData.FrameLightData, TileLights);
 	RenderCommand::BindConstantBuffer(3, nullptr, EShaderBindFlagBits::Pixel);
 }
 

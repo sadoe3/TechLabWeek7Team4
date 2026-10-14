@@ -43,7 +43,7 @@ public:
 	void RenderToneMapForward(FRenderer* Renderer, const FForwardViewTargets& Targets);
 
 	// 반투명 렌더링
-	void RenderTranslucent(FRenderer* Renderer, FConstantBuffer* FogConstants = nullptr);
+	void RenderTranslucent(FRenderer* Renderer, FConstantBuffer* FogConstants = nullptr, const FTileLightCullingResources* TileLights = nullptr);
 
 	// 전체 렌더 큐 조회
 	FRenderQueue& GetRenderQueue() { return RenderData.RenderQueue; }

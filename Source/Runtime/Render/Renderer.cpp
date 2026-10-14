@@ -32,7 +32,7 @@ namespace
 		FVector4 CameraPosition; // W: perspective projection
 		FVector4 CameraForward;
 		FVector4 ViewportLightCount;
-		FPointLightRenderData PointLights[MaxPointLights];
+		FPointLightRenderData PointLights[DeferredMaxPointLights];
 	};
 	static_assert(sizeof(FPointLightRenderData) == 32);
 	static_assert(sizeof(FDeferredLightConstants) % 16 == 0);
@@ -51,14 +51,13 @@ namespace
 		uint32 MaxLightsPerTile;
 		FAmbientLightRenderData AmbientLight;
 		FDirectionalLightRenderData DirectionalLights[MaxDirectionalLights];
-		FPointLightRenderData PointLights[MaxPointLights];
-		FSpotLightRenderData SpotLights[MaxSpotLights];
 		uint32 TileSize = LIGHT_CULLING_TILE_SIZE;
 		uint32 TilePadding[3] = {};
 	};
 	static_assert(sizeof(FFrameConstants) % 16 == 0);
 	static_assert(offsetof(FFrameConstants, TileCountX) == 88);
 	static_assert(offsetof(FFrameConstants, AmbientLight) == 96);
+	static_assert(offsetof(FFrameConstants, TileSize) == 96 + sizeof(FAmbientLightRenderData) + sizeof(FDirectionalLightRenderData) * MaxDirectionalLights);
 
 	constexpr uint32 MinPerObjectSlots = 1024;
 
@@ -100,6 +99,52 @@ namespace
 
 		return Macros;
 	}
+
+	bool EnsureBufferCapacity(
+		TUniquePtr<FStructuredBuffer>& Buffer,
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& SRV,
+		uint32& Capacity,
+		uint32 RequiredCount,
+		uint32 Stride)
+	{
+		if (Buffer && SRV && Capacity >= RequiredCount && Capacity > 0)
+		{
+			return true;
+		}
+
+		uint32 NewCapacity = std::max(Capacity, 1u);
+		while (NewCapacity < RequiredCount)
+		{
+			NewCapacity *= 2;
+		}
+
+		SRV.Reset();
+		Buffer = RenderCommand::CreateStructuredBuffer(NewCapacity, Stride, D3D11_USAGE_DYNAMIC, false);
+		if (!Buffer || !Buffer->GetBuffer())
+		{
+			Buffer.reset();
+			Capacity = 0;
+			return false;
+		}
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC Desc{
+			.Format = DXGI_FORMAT_UNKNOWN,
+			.ViewDimension = D3D11_SRV_DIMENSION_BUFFER,
+			.Buffer = {
+				.NumElements = NewCapacity,
+			},
+		};
+		if (FAILED(RenderCommand::GetDevice()->CreateShaderResourceView(Buffer->GetBuffer(), &Desc, SRV.ReleaseAndGetAddressOf())))
+		{
+			SRV.Reset();
+			Buffer.reset();
+			Capacity = 0;
+			return false;
+		}
+
+		Capacity = NewCapacity;
+		return true;
+	}
 }
 
 bool FRenderer::Init()
@@ -108,6 +153,9 @@ bool FRenderer::Init()
 	PerObjectCB = RenderCommand::CreateConstantBuffer(sizeof(FPerObjectConstants));
 	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FFrameConstants));
 	DeferredLightCB = RenderCommand::CreateConstantBuffer(sizeof(FDeferredLightConstants));
+
+	EnsureBufferCapacity(PointLightBuffer, PointLightBufferSRV, PointLightCapacity, 1, sizeof(FPointLightRenderData));
+	EnsureBufferCapacity(SpotLightBuffer, SpotLightBufferSRV, SpotLightCapacity, 1, sizeof(FSpotLightRenderData));
 
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
 
@@ -154,10 +202,6 @@ void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights,
 		Constants.AmbientLight = Lights->AmbientLight;
 		for (uint32 i = 0; i < Constants.NumDirectionalLights; ++i)
 			Constants.DirectionalLights[i] = Lights->DirectionalLights[i];
-		for (uint32 i = 0; i < Constants.NumPointLights; ++i)
-			Constants.PointLights[i] = Lights->PointLights[i];
-		for (uint32 i = 0; i < Constants.NumSpotLights; ++i)
-			Constants.SpotLights[i] = Lights->SpotLights[i];
 	}
 
 	if (View.ViewMode == EViewportMode::Unlit)
@@ -187,6 +231,9 @@ void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights,
 	}
 
 	RenderCommand::UpdateBufferData(ViewCB.get(), &Constants);
+
+	RenderCommand::BindShaderResource(10, PointLightBufferSRV.Get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
+	RenderCommand::BindShaderResource(11, SpotLightBufferSRV.Get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 }
 
 // 전체 렌더 큐 렌더링
@@ -204,7 +251,10 @@ void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue
 	DrawStaticGroups(Pass);
 	DrawPackets(InQueue, 0, InQueue.GetFirstTranslucentIndex(), View.ViewProjectionMatrix, Pass);
 	if (CurrentTileLights)
+	{
 		RenderCommand::UnbindShaderResources(8, 2, EShaderBindFlagBits::Pixel);
+	}
+	RenderCommand::UnbindShaderResources(10, 2, EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 	CurrentTileLights = nullptr;
 }
 
@@ -226,7 +276,7 @@ void FRenderer::DrawDeferredLighting(const FSceneView& View, const FDeferredView
 	Constants.CameraPosition = FVector4(View.ViewLocation.X, View.ViewLocation.Y,
 		View.ViewLocation.Z, View.bIsPerspective ? 1.0f : 0.0f);
 	Constants.CameraForward = FVector4(View.ViewForward.X, View.ViewForward.Y, View.ViewForward.Z, 0.0f);
-	const uint32 LightCount = std::min<uint32>(static_cast<uint32>(PointLights.Num()), MaxPointLights);
+	const uint32 LightCount = std::min<uint32>(static_cast<uint32>(PointLights.Num()), DeferredMaxPointLights);
 	Constants.ViewportLightCount = FVector4(
 		static_cast<float>(Targets.SceneColor->GetWidth()),
 		static_cast<float>(Targets.SceneColor->GetHeight()),
@@ -273,10 +323,16 @@ void FRenderer::DrawToneMap(FTexture2D* LightingHDR, FTexture2D* Depth)
 }
 
 // 반투명 요소 렌더링
-void FRenderer::RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights)
+void FRenderer::RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights, const FTileLightCullingResources* TileLights)
 {
-	SetupView(View, Lights);
+	SetupView(View, Lights, TileLights);
 	DrawPackets(InQueue, InQueue.GetFirstTranslucentIndex(), InQueue.Num(), View.ViewProjectionMatrix);
+	if (CurrentTileLights)
+	{
+		RenderCommand::UnbindShaderResources(8, 2, EShaderBindFlagBits::Pixel);
+	}
+	RenderCommand::UnbindShaderResources(10, 2, EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
+	CurrentTileLights = nullptr;
 	StaticGroups.clear();
 }
 
@@ -535,6 +591,21 @@ void FRenderer::EndObjectConstants()
 	if (PerObjectSlotCB)
 	{
 		RenderCommand::Unmap(PerObjectSlotCB.get());
+	}
+}
+
+void FRenderer::UploadLocalLights(const FFrameLightData& Lights)
+{
+	const uint32 NumPoint = static_cast<uint32>(Lights.PointLights.size());
+	const uint32 NumSpot = static_cast<uint32>(Lights.SpotLights.size());
+
+	if (EnsureBufferCapacity(PointLightBuffer, PointLightBufferSRV, PointLightCapacity, NumPoint, sizeof(FPointLightRenderData)) && NumPoint > 0)
+	{
+		RenderCommand::UpdateBufferData(PointLightBuffer.get(), Lights.PointLights.GetData(), NumPoint * sizeof(FPointLightRenderData));
+	}
+	if (EnsureBufferCapacity(SpotLightBuffer, SpotLightBufferSRV, SpotLightCapacity, NumSpot, sizeof(FSpotLightRenderData)) && NumSpot > 0)
+	{
+		RenderCommand::UpdateBufferData(SpotLightBuffer.get(), Lights.SpotLights.GetData(), NumSpot * sizeof(FSpotLightRenderData));
 	}
 }
 
