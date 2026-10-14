@@ -859,7 +859,7 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	{
 		FConstantBuffer* FogConstants = HeightFogRenderer
 			? HeightFogRenderer->GetTranslucentFogConstants(bHasFog) : nullptr;
-		SceneRenderer.RenderTranslucent(Renderer, FogConstants);
+		SceneRenderer.RenderTranslucent(Renderer, FogConstants, bHasTileLights ? &Targets.TileLightResources : nullptr);
 	}
 
 	RenderSceneText(TargetWorld, SceneView);
