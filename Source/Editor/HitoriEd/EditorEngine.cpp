@@ -868,7 +868,7 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 
 	if (Options.bDrawPrimitives && Options.bShowWorldNormal && WorldNormalRenderer)
 	{
-		FTexture2D* NormalTarget = Targets.Normal.get();
+		FTexture2D* NormalTarget = Targets.WorldNormal.get();
 		WorldNormalRenderer->OnRender(ColorTarget, NormalTarget, DepthTarget);
 	}
 
