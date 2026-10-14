@@ -1,0 +1,595 @@
+{
+    "Actors": [
+        {
+            "Class": "AAmbientLightActor",
+            "Components": [
+                {
+                    "Class": "UBillboardComponent",
+                    "Name": "UBillboardComponent_0",
+                    "Properties": {
+                        "Material": {
+                            "Base": "BillboardMaterial",
+                            "BaseColor": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "PSOType": 14,
+                            "SamplerState": "LinearClamp",
+                            "Shininess": 16.0,
+                            "SpecularColor": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "Textures": [
+                                "Editor/Icon/SkyLight.png"
+                            ],
+                            "UVScrollSpeed": [
+                                0.0,
+                                0.0
+                            ]
+                        },
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                },
+                {
+                    "Class": "UAmbientLightComponent",
+                    "Name": "UAmbientLightComponent_0",
+                    "Properties": {
+                        "Intensity": 0.9160000085830688,
+                        "LightColor": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bEnabled": true,
+                        "bHiddenInGame": false,
+                        "bShowLightBounds": true,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "APointLightActor",
+            "Components": [
+                {
+                    "Class": "UBillboardComponent",
+                    "Name": "UBillboardComponent_0",
+                    "Properties": {
+                        "Material": {
+                            "Base": "BillboardMaterial",
+                            "BaseColor": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "PSOType": 14,
+                            "SamplerState": "LinearClamp",
+                            "Shininess": 16.0,
+                            "SpecularColor": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "Textures": [
+                                "Editor/Icon/PointLight_64x.png"
+                            ],
+                            "UVScrollSpeed": [
+                                0.0,
+                                0.0
+                            ]
+                        },
+                        "Transform": {
+                            "Location": [
+                                0.7268056869506836,
+                                0.5552725791931152,
+                                0.46052300930023193
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                },
+                {
+                    "Class": "UPointLightComponent",
+                    "Name": "UPointLightComponent_0",
+                    "Properties": {
+                        "AttenuationRadius": 10.0,
+                        "Intensity": 1.5,
+                        "LightColor": [
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bEnabled": true,
+                        "bHiddenInGame": false,
+                        "bShowLightBounds": true,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "Textures": [
+                                    "Assets/brick_wall.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                4.0,
+                                0.0,
+                                0.5
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "Textures": [
+                                    "Assets/brick_wall.png",
+                                    "Assets/brick_wall_norm.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                4.0,
+                                1.0,
+                                0.5
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "Textures": [
+                                    "Assets/brick_wall.png",
+                                    "Assets/brick_wall_norm.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                4.0,
+                                2.0,
+                                0.5
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "Textures": [
+                                    "Assets/brick_wall.png",
+                                    "Assets/brick_wall_norm.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                4.0,
+                                3.0,
+                                0.5
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "Textures": [
+                                    "Assets/brick_wall.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                4.0,
+                                -1.0,
+                                0.5
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [
+                            {
+                                "Base": "DefaultMaterial",
+                                "BaseColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "PSOType": 0,
+                                "SamplerState": "LinearClamp",
+                                "Shininess": 16.0,
+                                "SpecularColor": [
+                                    1.0,
+                                    1.0,
+                                    1.0
+                                ],
+                                "Textures": [
+                                    "Assets/brick_wall.png"
+                                ],
+                                "UVScrollSpeed": [
+                                    0.0,
+                                    0.0
+                                ]
+                            }
+                        ],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                4.0,
+                                -2.0,
+                                0.5
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        },
+        {
+            "Class": "AStaticMeshActor",
+            "Components": [
+                {
+                    "Class": "UStaticMeshComponent",
+                    "Name": "UPrimitiveComponent_0",
+                    "Properties": {
+                        "OverrideMaterials": [],
+                        "StaticMesh": "Cube",
+                        "Transform": {
+                            "Location": [
+                                0.0,
+                                0.0,
+                                -0.49000000953674316
+                            ],
+                            "Rotation": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "Scale": [
+                                15.0,
+                                15.0,
+                                1.0
+                            ]
+                        },
+                        "bAutoActivate": true,
+                        "bHiddenInGame": false,
+                        "bVisible": true
+                    }
+                }
+            ],
+            "Properties": {
+                "bActorEnableCollision": true
+            }
+        }
+    ],
+    "Version": 2
+}
