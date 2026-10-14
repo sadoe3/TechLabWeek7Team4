@@ -42,7 +42,8 @@ public:
 	void RenderAll(const FSceneView& View, const FRenderQueue& InQueue);
 
 	// 불투명 요소 렌더링
-	void RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr, bool bGBufferPass = false, const FTileLightCullingResources* TileLights = nullptr);
+	void RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr, bool bGBufferPass = false, const FTileLightCullingResources* TileLights = nullptr, bool bReuseDepth = false);
+	void RenderDepthPrepass(const FSceneView& View, const FRenderQueue& InQueue);
 
 	// 반투명 요소 렌더링
 	void RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr);
@@ -63,6 +64,8 @@ public:
 	FTileLightCulling& GetTileLightCulling() { return TileLightCulling; }
 
 private:
+	enum class EMeshPass { Forward, GBuffer, DepthPrepass, ForwardAfterPrepass };
+
 	TUniquePtr<FConstantBuffer> PerObjectCB;
 	TUniquePtr<FConstantBuffer> ViewCB;
 	TUniquePtr<FConstantBuffer> DeferredLightCB;
@@ -86,16 +89,16 @@ private:
 	// 현재 불투명 패스 동안만 참조하며 소유권은 뷰에 있다.
 	const FTileLightCullingResources* CurrentTileLights = nullptr;
 
-	void DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 End, const FMatrix& ViewProjection, bool bGBufferPass = false);
+	void DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 End, const FMatrix& ViewProjection, EMeshPass Pass = EMeshPass::Forward);
 
-	void DrawStaticGroups(bool bGBufferPass = false);
+	void DrawStaticGroups(EMeshPass Pass = EMeshPass::Forward);
 
 	void UpdatePerObjectConstants(const FMatrix& World);
 
 	// 스태틱 메시 묶음
 	std::vector<const FStaticDrawGroup*> StaticGroups;
 	// 머티리얼 바인딩
-	void BindMaterial(UMaterial* material, bool bInWireframe = false, bool bGBufferPass = false);
+	void BindMaterial(UMaterial* material, bool bInWireframe = false, EMeshPass Pass = EMeshPass::Forward);
 	void UpdateMaterialParams(const FRenderPacket& RenderPacket);
 	void UpdatePerObjectConstants(const FRenderPacket& RenderPacket, const FMatrix& ViewProjection);
 	void EnsurePerObjectSlotCapacity(uint32 SlotCount);

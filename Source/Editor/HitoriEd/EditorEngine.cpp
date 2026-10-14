@@ -821,15 +821,19 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	if (!Width || !Height || !Targets.IsValidFor(Width, Height))
 		return false;
 
-	// Primitive 표시와 독립적으로 이번 뷰의 실제 라이트 목록을 갱신한다.
+	// 같은 opaque 목록으로 깊이를 먼저 기록하고 타일의 깊이 범위를 좁힌다.
+	if (Options.bDrawPrimitives)
+		SceneRenderer.RenderDepthPrepass(Renderer, Targets, Width, Height);
+	else
+		RenderCommand::ClearDepthStencil(DepthTarget);
+
+	// 메시가 없는 타일도 이번 프레임의 0으로 갱신한다.
 	const bool bHasTileLights = SceneRenderer.CullLights(Renderer, Targets, Width, Height);
 
 	if (Options.bDrawPrimitives)
 	{
 		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height, bHasTileLights);
 	}
-	else
-		RenderCommand::ClearDepthStencil(DepthTarget);
 
 	RenderCommand::BeginRenderPass(ColorTarget, nullptr, Width, Height);
 	if (SkyboxRenderer)

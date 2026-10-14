@@ -30,6 +30,7 @@ struct FTileCullingConstants
 
 
 class FShaderProgram;
+class FTexture2D;
 struct FTileLightCullingResources;
 
 
@@ -37,7 +38,7 @@ class FTileLightCulling
 {
 public:
     bool Init();
-    bool Execute(FTileLightCullingResources& Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix& Projection, const FCullingLight* Lights, const uint32 LightCount);
+    bool Execute(FTileLightCullingResources& Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix& Projection, FTexture2D* Depth, const FCullingLight* Lights, const uint32 LightCount);
 private:
     void UploadInputs(FTileLightCullingResources& Resources, const FCullingLight* Lights, const FTileCullingConstants& Constants);
 
