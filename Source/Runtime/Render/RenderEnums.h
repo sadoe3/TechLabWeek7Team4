@@ -13,6 +13,7 @@ enum class EViewportMode : uint8
 	Lit,
 	Wireframe,
 	SceneDepth,
+	WorldNormal,
 	None
 };
 

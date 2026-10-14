@@ -106,6 +106,7 @@ public:
 
 	bool IsWireframe() const { return ViewMode == EViewportMode::Wireframe; }
 	bool IsSceneDepth() const { return ViewMode == EViewportMode::SceneDepth; }
+	bool IsWorldNormal() const { return ViewMode == EViewportMode::WorldNormal; }
 	EViewportMode GetViewportMode() const { return ViewMode; }
 	void SetViewportMode(const EViewportMode InViewportMode) { ViewMode = InViewportMode; }
 	EShadingModel GetShadingModel() const { return ShadingModel; }

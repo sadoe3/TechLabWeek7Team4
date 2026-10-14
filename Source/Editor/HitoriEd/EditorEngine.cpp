@@ -1051,6 +1051,7 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	Options.bEnableFog = ViewClient->GetViewportMode() == EViewportMode::Lit;
 	Options.bEnableFXAA = SettingsPanel->GetSettings().bEnableFXAA;
 	Options.bShowSceneDepth = !bIsPIE && ViewClient->IsSceneDepth();
+	Options.bShowWorldNormal = !bIsPIE && ViewClient->IsWorldNormal();
 	Options.bLightGridDebug = SettingsPanel->GetSettings().bLightGridDebug;
 	Options.SceneDepthRange = ViewClient->GetMaxRange();
 	

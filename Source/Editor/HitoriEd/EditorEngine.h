@@ -87,6 +87,7 @@ private:
 		bool bEnableFog = true;
 		bool bEnableFXAA = false;
 		bool bShowSceneDepth = false;
+		bool bShowWorldNormal = false;
 		bool bLightGridDebug = false;
 		float SceneDepthRange = 1.0f;
 	};
