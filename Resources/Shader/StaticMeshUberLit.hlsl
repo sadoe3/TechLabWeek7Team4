@@ -38,8 +38,6 @@
 #endif
 
 #define MAX_DIRECTIONAL_LIGHT 8
-#define MAX_POINT_LIGHT 8
-#define MAX_SPOT_LIGHT 8
 
 struct AmbientLightInfo
 {
@@ -86,8 +84,6 @@ cbuffer FrameConstants : register(b0)
 	uint MaxLightsPerTile;
 	AmbientLightInfo AmbientLight;
 	DirectionalLightInfo DirectionalLights[MAX_DIRECTIONAL_LIGHT];
-	PointLightInfo PointLights[MAX_POINT_LIGHT];
-	SpotLightInfo SpotLights[MAX_SPOT_LIGHT];
 	uint TileSize;
 	uint3 TilePadding;
 };
@@ -134,6 +130,9 @@ Texture2D NormalMap : register(t1);
 Buffer<uint> TileLightCount : register(t8);
 Buffer<uint> TileLightIndices : register(t9);
 #endif
+
+StructuredBuffer<PointLightInfo> PointLights : register(t10);
+StructuredBuffer<SpotLightInfo> SpotLights : register(t11);
 
 SamplerState Sampler : register(s0);
 

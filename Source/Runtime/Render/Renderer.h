@@ -46,7 +46,7 @@ public:
 	void RenderDepthPrepass(const FSceneView& View, const FRenderQueue& InQueue);
 
 	// 반투명 요소 렌더링
-	void RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr);
+	void RenderTranslucent(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights = nullptr, const FTileLightCullingResources* TileLights = nullptr);
 
 	// 오클루전 객체 조회
 	FGPUOcclusion& GetGPUOcclusion() { return GPUOcclusion; }
@@ -60,6 +60,8 @@ public:
 
 	uint8* BeginObjectConstants(uint32 MaxSlots);
 	void EndObjectConstants();
+
+	void UploadLocalLights(const FFrameLightData& Lights);
 
 	FTileLightCulling& GetTileLightCulling() { return TileLightCulling; }
 
@@ -75,6 +77,14 @@ private:
 	uint32 PerObjectSlotCapacity = 0;
 	bool bUsePerObjectSlots = false;
 	bool bCurrentWireframe = false;
+	
+	// 광원 StructuredBuffer
+	TUniquePtr<FStructuredBuffer> PointLightBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> PointLightBufferSRV;
+	TUniquePtr<FStructuredBuffer> SpotLightBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> SpotLightBufferSRV;
+	uint32 PointLightCapacity = 0;
+	uint32 SpotLightCapacity = 0;
 
 	FPipelineState* CurrentOpaquePSO = nullptr;
 	FPipelineState* CurrentOpaquePSONormalMap = nullptr;
