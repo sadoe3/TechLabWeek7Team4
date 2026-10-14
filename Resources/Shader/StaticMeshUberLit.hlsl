@@ -193,7 +193,7 @@ float CalculateSpotAngleAttenuation(float CosAngle, float InnerConeAngle, float 
 float3 CalculateDiffuse(float3 Normal, float3 Position, float3 View, float2 ScreenPosition)
 {
 #if LIGHTING_ENABLED == 0
-	return Albedo;
+	return float3(1.0f, 1.0f, 1.0f);
 #endif
 	
 	float3 FinalColor = AmbientLight.Color * AmbientLight.Intensity;
@@ -269,7 +269,7 @@ float3 CalculateDiffuse(float3 Normal, float3 Position, float3 View, float2 Scre
 float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 ScreenPosition)
 {
 #if LIGHTING_ENABLED == 0
-	return Albedo;
+	return float3(0.0f, 0.0f, 0.0f);
 #endif
 	
 #if SPECULAR_MODEL == SPECULAR_PHONG
