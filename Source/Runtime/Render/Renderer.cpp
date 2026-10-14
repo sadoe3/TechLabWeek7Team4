@@ -180,6 +180,11 @@ void FRenderer::SetupView(const FSceneView& View, const FFrameLightData* Lights,
 		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Opaque, { { "LIGHTING_ENABLED", "0" } });
 		CurrentOpaquePSONormalMap = CurrentOpaquePSO;
 	}
+	else if (View.ViewMode == EViewportMode::WorldNormal)
+	{
+		CurrentOpaquePSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_WorldNormal);
+		CurrentOpaquePSONormalMap = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_WorldNormal, {{ "NORMAL_MAP_ENABLED", "1" }});
+	}
 
 	RenderCommand::UpdateBufferData(ViewCB.get(), &Constants);
 }
