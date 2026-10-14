@@ -104,6 +104,7 @@ cbuffer MaterialParams : register(b1)
 cbuffer WorldConstants : register(b2)
 {
 	matrix World;
+	matrix NormalMatrix;
 };
 
 struct VS_INPUT
@@ -287,8 +288,7 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 		DirectionalLightInfo Light = DirectionalLights[i];
 		
 		float3 LightDir = -normalize(Light.Direction);
-		float NdotL = saturate(dot(Normal, LightDir));
-		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(Normal, LightDir, View, Shininess, Normalization);
+		FinalColor += Light.Color * Light.Intensity * Specular(Normal, LightDir, View, Shininess, Normalization);
 	}
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
@@ -324,9 +324,8 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 
 			float Distance = sqrt(DistanceSquared);
 			LightDir /= max(Distance, 0.0001f);
-
-			float NdotL = saturate(dot(Normal, LightDir));
-			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
+			
+			FinalColor += Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
 		}
 		else
 		{
@@ -341,9 +340,8 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 
 			float Cos = dot(-LightDir, normalize(Light.Direction));
 			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
-
-			float NdotL = saturate(dot(Normal, LightDir));
-			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
+			
+			FinalColor += Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
 		}
 	}
 
@@ -367,7 +365,7 @@ PS_INPUT mainVS(VS_INPUT Input)
 	
 	Output.WorldPosition = mul(float4(Input.Position, 1.0f), World).xyz;
 	Output.Position = mul(float4(Output.WorldPosition, 1.0f), VP);
-	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), World).xyz); // TODO: 비균등 스케일 고려 필요
+	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), NormalMatrix).xyz);
 	Output.Color = Input.Color;
 	Output.UV = Input.UV;
     Output.Tangent = float4(mul(Input.Tangent.xyz, (float3x3) World), Input.Tangent.w);
