@@ -10,6 +10,7 @@
 #include "Editor/EditorUI/ImGuiRenderer.h"
 #include "Editor/Rendering/GridRenderer.h"
 #include "Editor/Rendering/SceneDepthRenderer.h"
+#include "Editor/Rendering/WorldNormalRenderer.h"
 #include "Editor/Rendering/LightGridDebugRenderer.h"
 #include "Editor/Rendering/HeightFogRenderer.h"
 #include "Editor/Rendering/FXAARenderer.h"
@@ -123,6 +124,7 @@ private:
 	TUniquePtr<FOutline> Outline;
 	TUniquePtr<FOutlineRenderer> OutlineRenderer;
 	TUniquePtr<FSceneDepthRenderer> SceneDepthRenderer;
+	TUniquePtr<FWorldNormalRenderer> WorldNormalRenderer;
 	TUniquePtr<FLightGridDebugRenderer> LightGridDebugRenderer;
 	TUniquePtr<FSkyboxRenderer> SkyboxRenderer;
 	TUniquePtr<FHeightFogRenderer> HeightFogRenderer;

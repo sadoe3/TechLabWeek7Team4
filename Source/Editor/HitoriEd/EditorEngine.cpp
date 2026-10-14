@@ -153,6 +153,9 @@ bool UEditorEngine::Init() {
 	SceneDepthRenderer = MakeUnique<FSceneDepthRenderer>();
 	SceneDepthRenderer->Init(Renderer);
 
+	WorldNormalRenderer = MakeUnique<FWorldNormalRenderer>();
+	WorldNormalRenderer->Init(Renderer);
+
 	HeightFogRenderer = MakeUnique<FHeightFogRenderer>();
 	HeightFogRenderer->Init(Renderer);
 
@@ -832,7 +835,7 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 
 	if (Options.bDrawPrimitives)
 	{
-		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height, bHasTileLights);
+		SceneRenderer.RenderForwardOpaque(Renderer, Targets, Width, Height, bHasTileLights, Options.bShowWorldNormal);
 	}
 
 	RenderCommand::BeginRenderPass(ColorTarget, nullptr, Width, Height);
@@ -863,7 +866,13 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 		SceneDepthRenderer->OnRender(SceneView, DepthTarget, ColorTarget, Options.SceneDepthRange);
 	}
 
-	if (Options.bEnableFXAA && !Options.bShowSceneDepth && FXAARenderer && FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
+	if (Options.bDrawPrimitives && Options.bShowWorldNormal && WorldNormalRenderer)
+	{
+		FTexture2D* NormalTarget = Targets.Normal.get();
+		WorldNormalRenderer->OnRender(ColorTarget, NormalTarget, DepthTarget);
+	}
+
+	if (Options.bEnableFXAA && !Options.bShowSceneDepth && !Options.bShowWorldNormal && FXAARenderer && FXAARenderer->OnRender(SceneView, DepthTarget, ColorTarget))
 	{
 		if (!Targets.SwapSceneColorAndBind(FXAARenderer->GetOutputTarget()))
 		{

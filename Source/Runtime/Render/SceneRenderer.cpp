@@ -132,7 +132,7 @@ bool FSceneRenderer::CullLights(FRenderer* Renderer, FForwardViewTargets& Target
 	return Renderer && Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, View.ProjectionMatrix, Targets.Depth.get(), RenderData.CullingLights.GetData(), static_cast<uint32>(RenderData.CullingLights.Num()));
 }
 
-void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height, bool bUseTileLights)
+void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height, bool bUseTileLights, bool bWorldNormalMode)
 {
 	if (!Renderer)
 		return;
@@ -142,6 +142,17 @@ void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardView
 	RenderCommand::BindRenderPassNoClear(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
 	// 프리패스에서 준비한 동일한 메시 묶음과 오브젝트 상수를 재사용한다.
 	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr, true);
+
+	if (bWorldNormalMode)
+	{
+		if (!RenderCommand::BeginWorldNormalPass(Targets, Width, Height))
+			return;
+	}
+	else
+		RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
+
+	PrepareDrawData(Renderer, RenderData);
+	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr);
 	RenderCommand::EndRenderPass();
 }
 
