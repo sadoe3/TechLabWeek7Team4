@@ -90,6 +90,7 @@ private:
 		bool bShowSceneDepth = false;
 		bool bShowWorldNormal = false;
 		bool bLightGridDebug = false;
+		bool bLightCulling = true;
 		float SceneDepthRange = 1.0f;
 	};
 	// Common scene passes. Leaves SceneColor/Depth bound for caller overlays and EndRenderPass.

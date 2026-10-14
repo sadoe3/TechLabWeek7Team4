@@ -20,6 +20,7 @@ struct FEditorSettings
 	bool bEnableFXAA = false;
 	// 콘솔 전용 실행 중 플래그. UI 및 editor.ini에는 노출하지 않는다.
 	bool bLightGridDebug = false;
+	bool bLightCulling = true;
 
 	// Values
 	float SceneDepthMaxRange = 50.0f;

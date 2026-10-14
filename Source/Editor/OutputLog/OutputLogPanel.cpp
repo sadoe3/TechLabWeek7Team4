@@ -27,6 +27,7 @@ bool FOutputLogPanel::Init()
 	Commands.Add("CLEAR");
 	Commands.Add("STAT");
 	Commands.Add("LightGridDebug");
+	Commands.Add("LightCulling");
 
 	HistoryPos = -1;
 	InputBuf[0] = '\0';
@@ -198,6 +199,24 @@ void FOutputLogPanel::ExecCommand(const FString& CommandLine)
 			FLog::Log(ELogVerbosity::Info, "LightGridDebug {}", Value);
 		}
 	}
+	else if (EqualsIgnoreCase(Command, "LightCulling"))
+	{
+		FString Value;
+		FString Extra;
+		CommandStream >> Value;
+		if ((Value != "0" && Value != "1") || (CommandStream >> Extra))
+		{
+			FLog::Log(ELogVerbosity::Info, "Usage: LightCulling <0|1>");
+		}
+		else if (!LightCullingCallback || !LightCullingCallback(Value == "1"))
+		{
+			FLog::Log(ELogVerbosity::Warning, "LightCulling is unavailable");
+		}
+		else
+		{
+			FLog::Log(ELogVerbosity::Info, "LightCulling {}", Value);
+		}
+	}
 	else if (EqualsIgnoreCase(CommandLine, "CLEAR"))
 	{
 		ClearLog();
@@ -209,6 +228,7 @@ void FOutputLogPanel::ExecCommand(const FString& CommandLine)
 			FLog::Log(ELogVerbosity::Info, "- {}", Command);
 		OnLog(ELogVerbosity::Info, "- STAT <fps|memory|all|none>");
 		OnLog(ELogVerbosity::Info, "- LightGridDebug <0|1> (Forward views)");
+		OnLog(ELogVerbosity::Info, "- LightCulling <0|1> (Forward views, default: 1)");
 	}
 	else if (EqualsIgnoreCase(CommandLine, "HISTORY"))
 	{

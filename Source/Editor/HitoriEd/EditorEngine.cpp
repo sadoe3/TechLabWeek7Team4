@@ -166,6 +166,11 @@ bool UEditorEngine::Init() {
 	FireBallRenderer->Init(Renderer);
 
 	SettingsPanel = EditorUI->AddEditorPanel<FSettingsPanel>();
+	OutputLogPanel->SetLightCullingCallback([this](bool bEnabled)
+	{
+		SettingsPanel->GetMutableSettings().bLightCulling = bEnabled;
+		return true;
+	});
 	OutputLogPanel->SetLightGridDebugCallback([this](bool bEnabled)
 	{
 		SettingsPanel->GetMutableSettings().bLightGridDebug = bEnabled;
@@ -722,6 +727,7 @@ void UEditorEngine::RenderGameFrameForward(FForwardGameViewportClient* GameClien
 	FSceneRenderOptions Options;
 	Options.bEnableFXAA = SettingsPanel && SettingsPanel->GetSettings().bEnableFXAA;
 	Options.bLightGridDebug = SettingsPanel && SettingsPanel->GetSettings().bLightGridDebug;
+	Options.bLightCulling = !SettingsPanel || SettingsPanel->GetSettings().bLightCulling;
 	// FDeferredViewTargets& Targets = GameClient->GetDeferredViewTargets();
 	FForwardViewTargets& Targets = GameClient->GetViewTargets();
 	if (!RenderSceneFrameForward(Targets, SceneView, SceneRenderer, GameClient->GetWorld(), Options))
@@ -747,7 +753,7 @@ void UEditorEngine::RenderGameFrameForward(FForwardGameViewportClient* GameClien
 		}
 	}
 	// FXAA와 SIE 오버레이 이후 최종 컬러 위에 표시한다.
-	if (Options.bLightGridDebug)
+	if (Options.bLightGridDebug && Options.bLightCulling)
 		LightGridDebugRenderer->OnRender(Targets.TileLightResources, Targets.SceneColor.get(), DepthTarget);
 
 	RenderCommand::EndRenderPass();
@@ -830,8 +836,8 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 	else
 		RenderCommand::ClearDepthStencil(DepthTarget);
 
-	// 메시가 없는 타일도 이번 프레임의 0으로 갱신한다.
-	const bool bHasTileLights = SceneRenderer.CullLights(Renderer, Targets, Width, Height);
+	// OFF에서는 CS 실행을 생략하고 기존 전체 라이트 계산 경로를 사용한다.
+	const bool bHasTileLights = Options.bLightCulling && SceneRenderer.CullLights(Renderer, Targets, Width, Height);
 
 	if (Options.bDrawPrimitives)
 	{
@@ -1062,6 +1068,7 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	Options.bShowSceneDepth = !bIsPIE && ViewClient->IsSceneDepth();
 	Options.bShowWorldNormal = !bIsPIE && ViewClient->IsWorldNormal();
 	Options.bLightGridDebug = SettingsPanel->GetSettings().bLightGridDebug;
+	Options.bLightCulling = SettingsPanel->GetSettings().bLightCulling;
 	Options.SceneDepthRange = ViewClient->GetMaxRange();
 	
 	FTexture2D* DepthTarget = nullptr;
@@ -1167,7 +1174,7 @@ void UEditorEngine::RenderFrame(FEditorViewportClient *ViewClient,
 	}
 
 	// FXAA와 에디터 오버레이 이후에 그려 숫자와 타일 경계를 유지한다.
-	if (Options.bLightGridDebug)
+	if (Options.bLightGridDebug && Options.bLightCulling)
 	{
 		FForwardViewTargets& Targets = static_cast<FForwardEditorViewportClient*>(ViewClient)->GetViewTargets();
 		LightGridDebugRenderer->OnRender(Targets.TileLightResources, Targets.SceneColor.get(), DepthTarget);

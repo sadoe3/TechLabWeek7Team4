@@ -31,11 +31,13 @@ public:
 
 	void ExecCommand(const FString& command_line);
 	void SetLightGridDebugCallback(std::function<bool(bool)> InCallback) { LightGridDebugCallback = std::move(InCallback); }
+	void SetLightCullingCallback(std::function<bool(bool)> InCallback) { LightCullingCallback = std::move(InCallback); }
 
 	int TextEditCallback(ImGuiInputTextCallbackData* data);
 
 private:
 	std::function<bool(bool)> LightGridDebugCallback;
+	std::function<bool(bool)> LightCullingCallback;
 	char                  InputBuf[256];
 	TArray<FLogData>       Items;
 	TArray<FString>		  Commands;
