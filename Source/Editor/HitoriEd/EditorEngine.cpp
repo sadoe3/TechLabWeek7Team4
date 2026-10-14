@@ -752,9 +752,6 @@ void UEditorEngine::RenderGameFrameForward(FForwardGameViewportClient* GameClien
 				!SceneView.bIsPerspective);
 		}
 	}
-	// FXAA와 SIE 오버레이 이후 최종 컬러 위에 표시한다.
-	if (Options.bLightGridDebug && Options.bLightCulling)
-		LightGridDebugRenderer->OnRender(Targets.TileLightResources, Targets.SceneColor.get(), DepthTarget);
 
 	RenderCommand::EndRenderPass();
 }
@@ -884,6 +881,12 @@ bool UEditorEngine::RenderSceneFrameForward(FForwardViewTargets& Targets, const 
 		{
 			RenderCommand::BindRenderPassNoClear(ColorTarget, DepthTarget, Width, Height);
 		}
+	}
+
+	if (Options.bLightGridDebug && Options.bLightCulling)
+	{
+		LightGridDebugRenderer->OnRender(Targets.TileLightResources, Targets.SceneColor.get(), DepthTarget);
+
 	}
 	return true;
 }
