@@ -116,9 +116,20 @@ void FSceneRenderer::RenderToneMapDeferred(FRenderer* Renderer, const FDeferredV
 		Renderer->DrawToneMap(Targets.LightingHDR.get(), Targets.Depth.get());
 }
 
+void FSceneRenderer::RenderDepthPrepass(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height)
+{
+	if (!Renderer)
+		return;
+
+	RenderCommand::BeginRenderPass(nullptr, Targets.Depth.get(), Width, Height);
+	PrepareDrawData(Renderer, RenderData);
+	Renderer->RenderDepthPrepass(View, RenderData.RenderQueue);
+	RenderCommand::EndRenderPass(); // 깊이 SRV를 CS에서 읽기 전에 DSV를 해제한다.
+}
+
 bool FSceneRenderer::CullLights(FRenderer* Renderer, FForwardViewTargets& Targets, uint32 Width, uint32 Height)
 {
-	return Renderer && Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, View.ProjectionMatrix, RenderData.CullingLights.GetData(), static_cast<uint32>(RenderData.CullingLights.Num()));
+	return Renderer && Renderer->GetTileLightCulling().Execute(Targets.TileLightResources, Width, Height, View.ProjectionMatrix, Targets.Depth.get(), RenderData.CullingLights.GetData(), static_cast<uint32>(RenderData.CullingLights.Num()));
 }
 
 void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height, bool bUseTileLights)
@@ -126,9 +137,11 @@ void FSceneRenderer::RenderForwardOpaque(FRenderer* Renderer, const FForwardView
 	if (!Renderer)
 		return;
 
-	RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
-	PrepareDrawData(Renderer, RenderData);
-	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr);
+	// 프리패스 깊이는 유지하고 HDR 색상만 초기화한다.
+	RenderCommand::BeginRenderPass(Targets.LightingHDR.get(), nullptr, Width, Height);
+	RenderCommand::BindRenderPassNoClear(Targets.LightingHDR.get(), Targets.Depth.get(), Width, Height);
+	// 프리패스에서 준비한 동일한 메시 묶음과 오브젝트 상수를 재사용한다.
+	Renderer->RenderOpaque(View, RenderData.RenderQueue, &RenderData.FrameLightData, false, bUseTileLights ? &Targets.TileLightResources : nullptr, true);
 	RenderCommand::EndRenderPass();
 }
 

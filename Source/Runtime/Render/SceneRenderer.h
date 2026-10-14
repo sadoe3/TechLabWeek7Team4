@@ -36,6 +36,8 @@ public:
 	void RenderToneMapDeferred(FRenderer* Renderer, const FDeferredViewTargets& Targets);
 
 	// 불투명 Forward 렌더링
+	void RenderDepthPrepass(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height);
+	// RenderDepthPrepass 이후 호출한다. 컬링과 조명 모두 이번 뷰의 opaque 깊이를 사용한다.
 	bool CullLights(FRenderer* Renderer, FForwardViewTargets& Targets, uint32 Width, uint32 Height);
 	void RenderForwardOpaque(FRenderer* Renderer, const FForwardViewTargets& Targets, uint32 Width, uint32 Height, bool bUseTileLights = false);
 	void RenderToneMapForward(FRenderer* Renderer, const FForwardViewTargets& Targets);

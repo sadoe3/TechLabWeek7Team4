@@ -30,9 +30,9 @@ bool FTileLightCulling::Init()
     return true;
 }
 
-bool FTileLightCulling::Execute(FTileLightCullingResources& Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix& Projection, const FCullingLight* Lights, const uint32 LightCount)
+bool FTileLightCulling::Execute(FTileLightCullingResources& Resources, const uint32 ViewWidth, const uint32 ViewHeight, const FMatrix& Projection, FTexture2D* Depth, const FCullingLight* Lights, const uint32 LightCount)
 {
-    if (ViewWidth == 0 || ViewHeight == 0 || !ComputeShader || !ConstantsBuffer)
+    if (ViewWidth == 0 || ViewHeight == 0 || !ComputeShader || !ConstantsBuffer || !Depth)
         return false;
 
     // 화면 타일 크기는 스레드 그룹 크기와 독립적이다.
@@ -57,12 +57,15 @@ bool FTileLightCulling::Execute(FTileLightCullingResources& Resources, const uin
     // CS_TileLightCulling.hlsl에 선언된 레지스터 번호
     constexpr uint32 ConstantsSlot = 0;    // b0
     constexpr uint32 LightSpheresSlot = 0; // t0
+    constexpr uint32 DepthSlot = 1;        // t1
     constexpr uint32 LightCountSlot = 0;   // u0
     constexpr uint32 LightIndicesSlot = 1; // u1
 
     RenderCommand::BindShaderProgram(ComputeShader);
     RenderCommand::BindConstantBuffer(ConstantsSlot, ConstantsBuffer.get(), EShaderBindFlagBits::Compute);
     RenderCommand::BindShaderResource(LightSpheresSlot, Resources.LightSpheresSRV.Get(), EShaderBindFlagBits::Compute);
+
+    RenderCommand::BindShaderResource(DepthSlot, Depth, EShaderBindFlagBits::Compute);
 
     RenderCommand::BindComputeUAV(LightCountSlot, Resources.TileLightCountUAV.Get());
     RenderCommand::BindComputeUAV(LightIndicesSlot, Resources.TileLightIndicesUAV.Get());
@@ -76,7 +79,7 @@ bool FTileLightCulling::Execute(FTileLightCullingResources& Resources, const uin
     RenderCommand::BindComputeUAV(LightIndicesSlot, nullptr);
 
     // 이번 실행에서 사용한 입력 슬롯도 해제
-    RenderCommand::UnbindShaderResources(LightSpheresSlot, 1, EShaderBindFlagBits::Compute);
+    RenderCommand::UnbindShaderResources(LightSpheresSlot, 2, EShaderBindFlagBits::Compute);
     RenderCommand::BindConstantBuffer(ConstantsSlot, nullptr, EShaderBindFlagBits::Compute);
     return true;
 }

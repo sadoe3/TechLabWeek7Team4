@@ -21,6 +21,7 @@ enum class EPSOType : uint8
 	ToneMap,
 	FireBall,
 	Billboard,
+	StaticMesh_Depth,
 	Count
 };
 

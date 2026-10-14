@@ -192,14 +192,22 @@ void FRenderer::RenderAll(const FSceneView& View, const FRenderQueue& InQueue)
 }
 
 // 불투명 요소 렌더링
-void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights, bool bGBufferPass, const FTileLightCullingResources* TileLights)
+void FRenderer::RenderOpaque(const FSceneView& View, const FRenderQueue& InQueue, const FFrameLightData* Lights, bool bGBufferPass, const FTileLightCullingResources* TileLights, bool bReuseDepth)
 {
 	SetupView(View, Lights, bGBufferPass ? nullptr : TileLights);
-	DrawStaticGroups(bGBufferPass);
-	DrawPackets(InQueue, 0, InQueue.GetFirstTranslucentIndex(), View.ViewProjectionMatrix, bGBufferPass);
+	const EMeshPass Pass = bGBufferPass ? EMeshPass::GBuffer : (bReuseDepth ? EMeshPass::ForwardAfterPrepass : EMeshPass::Forward);
+	DrawStaticGroups(Pass);
+	DrawPackets(InQueue, 0, InQueue.GetFirstTranslucentIndex(), View.ViewProjectionMatrix, Pass);
 	if (CurrentTileLights)
 		RenderCommand::UnbindShaderResources(8, 2, EShaderBindFlagBits::Pixel);
 	CurrentTileLights = nullptr;
+}
+
+void FRenderer::RenderDepthPrepass(const FSceneView& View, const FRenderQueue& InQueue)
+{
+	SetupView(View, nullptr);
+	DrawStaticGroups(EMeshPass::DepthPrepass);
+	DrawPackets(InQueue, 0, InQueue.GetFirstTranslucentIndex(), View.ViewProjectionMatrix, EMeshPass::DepthPrepass);
 }
 
 void FRenderer::DrawDeferredLighting(const FSceneView& View, const FDeferredViewTargets& Targets,
@@ -268,7 +276,7 @@ void FRenderer::RenderTranslucent(const FSceneView& View, const FRenderQueue& In
 }
 
 // 스태틱 메시 묶음을 그린다
-void FRenderer::DrawStaticGroups(bool bGBufferPass)
+void FRenderer::DrawStaticGroups(EMeshPass Pass)
 {
 	if (StaticGroups.empty())
 		return;
@@ -288,10 +296,11 @@ void FRenderer::DrawStaticGroups(bool bGBufferPass)
 		if (Group->Material != BoundMaterial)
 		{
 			BoundMaterial = Group->Material;
-			BindMaterial(BoundMaterial, bCurrentWireframe, bGBufferPass);
+			BindMaterial(BoundMaterial, bCurrentWireframe, Pass);
 			FRenderPacket MaterialOnly;
 			MaterialOnly.Material = BoundMaterial;
-			UpdateMaterialParams(MaterialOnly);
+			if (Pass != EMeshPass::DepthPrepass)
+				UpdateMaterialParams(MaterialOnly);
 		}
 
 		for (const FStaticDrawItem& Item : Group->Items)
@@ -312,7 +321,7 @@ void FRenderer::DrawStaticGroups(bool bGBufferPass)
 }
 
 // 정렬된 패킷 중 [Begin, End) 범위를 그린다
-void FRenderer::DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 End, const FMatrix& ViewProjection, bool bGBufferPass)
+void FRenderer::DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 End, const FMatrix& ViewProjection, EMeshPass Pass)
 {
 	SCOPE_CYCLE_COUNTER(STAT_DrawRenderPackets);
 
@@ -329,9 +338,9 @@ void FRenderer::DrawPackets(const FRenderQueue& InQueue, uint32 Begin, uint32 En
 			RenderCommand::BindMesh(RenderPacket.Mesh, RenderPacket.LODIndex);
 		}
 		if (RenderPacket.Material != LastMaterial) {
-			BindMaterial(RenderPacket.Material, bCurrentWireframe, bGBufferPass);
+			BindMaterial(RenderPacket.Material, bCurrentWireframe, Pass);
 		}
-		if (RenderPacket.Material != LastMaterial || RenderPacket.MaterialParamData)
+		if (Pass != EMeshPass::DepthPrepass && (RenderPacket.Material != LastMaterial || RenderPacket.MaterialParamData))
 			UpdateMaterialParams(RenderPacket);
 		if (bUsePerObjectSlots && RenderPacket.Slot != InvalidObjectSlot)
 		{
@@ -525,14 +534,22 @@ void FRenderer::EndObjectConstants()
 }
 
 // 머티리얼 파이프라인 상태 및 텍스처 바인딩
-void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, bool bGBufferPass)
+void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, EMeshPass Pass)
 {
+	if (Pass == EMeshPass::DepthPrepass)
+	{
+		RenderCommand::BindPipelineState(*FRenderResourceManager::GetPSO(EPSOType::StaticMesh_Depth));
+		if (bInWireframe)
+			RenderCommand::SetRasterizerState(ERasterizerState::Wireframe);
+		return;
+	}
+
 	EPSOType PSOType = material->PSOType;
 	bool bNormalMap = material->Textures.Num() > 1 && material->Textures[1];
 
 	if (PSOType == EPSOType::StaticMesh_Opaque)
 	{
-		if (bGBufferPass)
+		if (Pass == EMeshPass::GBuffer)
 		{
 			if (FPipelineState* PSO = FRenderResourceManager::GetPSO(EPSOType::StaticMesh_GBuffer))
 			{
@@ -558,6 +575,9 @@ void FRenderer::BindMaterial(UMaterial* material, bool bInWireframe, bool bGBuff
 		}
 	}
 	
+	if (Pass == EMeshPass::ForwardAfterPrepass)
+		RenderCommand::SetDepthStencilState(EDepthStencilState::ReadOnlyLessEqual);
+
 	// 텍스처와 샘플러 바인딩
 	for (size_t i = 0; i < material->Textures.size(); i++)
 	{

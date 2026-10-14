@@ -9,6 +9,7 @@ struct FCullingLight
 
 // point light, spotlight의 정보 (spotlight은 bounding sphere로 근사하여 넘어온다)
 StructuredBuffer<FCullingLight> LightSpheres : register(t0);
+Texture2D<float> SceneDepth : register(t1);
 
 cbuffer TileCullingConstants : register(b0)
 {
@@ -31,6 +32,8 @@ RWBuffer<uint> TileLightIndices : register(u1);
 
 // 스레드 그룹이 공유하는 데이터
 groupshared uint SharedLightCount; // 이번 타일에 들어갈 라이트 수
+groupshared uint SharedMinDepth;
+groupshared uint SharedMaxDepth;
 groupshared float4 SharedPlanes[PLANE_COUNT]; // 이번 타일에 대한 tile frustum planes
 
 // 평면의 안쪽이 양수이며, xyz는 법선, w는 상수항이다.
@@ -54,10 +57,45 @@ void mainCS(uint3 groupId : SV_GroupID, uint localIndex : SV_GroupIndex)  // Gro
 {
     uint tileIndex = groupId.y * TileCountX + groupId.x;
 
-    // 1. 공유 카운터 초기화 및 타일 평면 계산
+    // 1. opaque 깊이 범위를 구한다. 정방향 깊이에서 1은 배경이다.
     if (localIndex == 0)
     {
         SharedLightCount = 0;
+        
+        // float는 atomic operation이 없어서, integer로 계산한다.
+        // [0, 1]의 양수 float는 uint 비트 순서도 같은 순서다.
+        SharedMinDepth = asuint(1.0f);
+        SharedMaxDepth = asuint(0.0f);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    for (uint pixelIndex = localIndex; pixelIndex < TileSize * TileSize; pixelIndex += THREADS_PER_TILE)
+    {
+        uint2 pixel = groupId.xy * TileSize + uint2(pixelIndex % TileSize, pixelIndex / TileSize);
+        if (all(pixel < ViewSize))
+        {
+            float depth = SceneDepth.Load(int3(pixel, 0));
+            if (depth < 1.0f)
+            {
+                InterlockedMin(SharedMinDepth, asuint(depth));
+                InterlockedMax(SharedMaxDepth, asuint(depth));
+            }
+        }
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    // 그룹 전체가 같은 조건으로 빠져나간다. 이전 프레임의 개수도 지운다.
+    if (SharedMinDepth == asuint(1.0f))
+    {
+        if (localIndex == 0)
+            TileLightCount[tileIndex] = 0;
+        return;
+    }
+
+    if (localIndex == 0)
+    {
 
         float2 pixelMin = float2(groupId.xy * TileSize);
         float2 pixelMax = min(pixelMin + float2(TileSize, TileSize), float2(ViewSize));
@@ -80,10 +118,13 @@ void mainCS(uint3 groupId : SV_GroupID, uint localIndex : SV_GroupIndex)  // Gro
         SharedPlanes[2] = NormalizePlane(yTop * c4 - c2);
         SharedPlanes[3] = NormalizePlane(c2 - yBottom * c4);
 
-        // Direct3D 클리핑 범위: 0 <= z_clip <= w_clip
-        // todo: 추후 depth pre pass가 만들어지면, 이 값은 min depth 와 max depth로 변경된다.
-        SharedPlanes[4] = NormalizePlane(c3);
-        SharedPlanes[5] = NormalizePlane(c4 - c3);
+        // depth pre-pass를 통해 얻은 depth buffer를 가지고 min-z plane과 max-z plane을 만든다.
+        // D24 깊이 양자화로 표면 경계의 라이트가 빠지지 않도록 두 단계만큼 넓힌다.
+        const float depthMargin = 2.0f / 16777215.0f;
+        float minDepth = max(0.0f, asfloat(SharedMinDepth) - depthMargin);
+        float maxDepth = min(1.0f, asfloat(SharedMaxDepth) + depthMargin);
+        SharedPlanes[4] = NormalizePlane(c3 - minDepth * c4);
+        SharedPlanes[5] = NormalizePlane(maxDepth * c4 - c3);
     }
 
     GroupMemoryBarrierWithGroupSync();
