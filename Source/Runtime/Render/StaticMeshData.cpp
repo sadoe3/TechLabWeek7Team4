@@ -216,9 +216,16 @@ void FStaticMeshData::BuildTriangleBVH()
 
 void FStaticMeshData::CalculateTangents()
 {
-	for (FVertexPNCT& Vertex : Vertices)
+	const int32 VertexCount = Vertices.Num();
+	TArray<FVector> Tangents;
+	TArray<FVector> Bitangents;
+	Tangents.SetNum(VertexCount);
+	Bitangents.SetNum(VertexCount);
+
+	for (int32 i = 0; i < VertexCount; ++i)
 	{
-		Vertex.Tangent = FVector();
+		Tangents[i] = FVector();
+		Bitangents[i] = FVector();
 	}
 
 	for (int32 i = 0; i < Indices.Num(); i += 3)
@@ -243,23 +250,33 @@ void FStaticMeshData::CalculateTangents()
 		if (fabs(determinant) < 1e-5f)
 			continue;
 
-		const FVector Tangent = ((e1 * dv2 - e2 * dv1) / determinant);
+		const float InvDet = 1.0f / determinant;
+		const FVector Tangent = (e1 * dv2 - e2 * dv1) * InvDet;
+		const FVector Bitangent = (e2 * du1 - e1 * du2) * InvDet;
 
-		Vertices[i0].Tangent += Tangent;
-		Vertices[i1].Tangent += Tangent;
-		Vertices[i2].Tangent += Tangent;
+		Tangents[i0] += Tangent;
+		Tangents[i1] += Tangent;
+		Tangents[i2] += Tangent;
+		Bitangents[i0] += Bitangent;
+		Bitangents[i1] += Bitangent;
+		Bitangents[i2] += Bitangent;
 	}
 
-	for (FVertexPNCT& Vertex : Vertices)
+	for (int32 i = 0; i < VertexCount; ++i)
 	{
+		FVertexPNCT& Vertex = Vertices[i];
 		const FVector Normal = Vertex.Normal;
-		FVector Tangent = Vertex.Tangent - Normal * Normal.Dot(Vertex.Tangent);
+		FVector T = Tangents[i] - Normal * Normal.Dot(Tangents[i]);
 
-		if (Tangent.Length() < 1e-6f)
+		if (T.Length() < 1e-6f)
 		{
-			Tangent = (fabs(Normal.X) < 0.9f ? FVector(1, 0, 0) : FVector(0, 1, 0)).Cross(Normal);
+			T = (fabs(Normal.X) < 0.9f ? FVector(1, 0, 0) : FVector(0, 1, 0)).Cross(Normal);
 		}
 
-		Vertex.Tangent = Tangent.Normalized();
+		T = T.Normalized();
+
+		const float W = (Normal.Cross(T).Dot(Bitangents[i]) < 0.0f) ? -1.0f : 1.0f;
+
+		Vertex.Tangent = FVector4(T, W);
 	}
 }

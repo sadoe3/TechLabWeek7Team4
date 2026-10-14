@@ -112,7 +112,7 @@ struct VS_INPUT
 	float3 Normal : NORMAL;
 	float4 Color : COLOR;
 	float2 UV : TEXCOORD;
-	float3 Tangent : TANGENT;
+	float4 Tangent : TANGENT;
 };
 
 struct PS_INPUT
@@ -124,7 +124,7 @@ struct PS_INPUT
 	float2 UV : TEXCOORD1;
 	float3 Diffuse : TEXCOORD2;
 	float3 Specular : TEXCOORD3;
-	float3 Tangent : TANGENT;
+	float4 Tangent : TANGENT;
 };
 Texture2D Texture : register(t0);
 Texture2D NormalMap : register(t1);
@@ -342,12 +342,12 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 	return FinalColor;
 }
 
-float3 CalculateNormalMapping(float3 SampledNormal, float3 Normal, float3 Tangent)
+float3 CalculateNormalMapping(float3 SampledNormal, float3 Normal, float4 Tangent)
 {
 	float3 DecodedNormal = SampledNormal * 2.0f - 1.0f;
 	float3 N = normalize(Normal);
-	float3 T = normalize(Tangent - N * dot(Tangent, N));
-	float3 B = cross(N, T);
+	float3 T = normalize(Tangent.xyz - N * dot(Tangent.xyz, N));
+	float3 B = cross(N, T) * Tangent.w;
 	float3x3 TBN = float3x3(T, B, N);
 	
 	return normalize(mul(DecodedNormal, TBN));
@@ -362,7 +362,7 @@ PS_INPUT mainVS(VS_INPUT Input)
 	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), World).xyz); // TODO: 비균등 스케일 고려 필요
 	Output.Color = Input.Color;
 	Output.UV = Input.UV;
-	Output.Tangent = mul(Input.Tangent, (float3x3)World);
+    Output.Tangent = float4(mul(Input.Tangent.xyz, (float3x3) World), Input.Tangent.w);
 	
 #if PER_VERTEX == 1
 	float3 ViewDir = normalize(CameraPosition - Output.WorldPosition);

@@ -30,5 +30,5 @@ struct FVertexPNCT
 	FVector Normal = FVector();
 	FVector4 Color = FVector4();
 	FVector2 UV = FVector2();
-	FVector Tangent = FVector();
+	FVector4 Tangent = FVector4();
 };
