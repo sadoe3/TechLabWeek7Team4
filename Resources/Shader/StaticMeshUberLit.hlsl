@@ -288,9 +288,9 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 		
 		float3 LightDir = -normalize(Light.Direction);
 		
-        float NdotL = dot(Normal, LightDir);
-        FinalColor += NdotL * Light.Color * Light.Intensity * Specular(Normal, LightDir, View, Shininess, Normalization);
-    }
+		float NdotL = saturate(dot(Normal, LightDir));
+		FinalColor += NdotL * Light.Color * Light.Intensity * Specular(Normal, LightDir, View, Shininess, Normalization);
+	}
 	
 	// Gouraud와 컬링 결과가 없는 뷰는 기존 전체 라이트를 순회한다.
 	uint LightCount = NumPointLights + NumSpotLights;
@@ -326,9 +326,9 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 			float Distance = sqrt(DistanceSquared);
 			LightDir /= max(Distance, 0.0001f);
 			
-            float NdotL = dot(Normal, LightDir);
-            FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
-        }
+			float NdotL = saturate(dot(Normal, LightDir));
+			FinalColor += NdotL * Light.Color * Light.Intensity * Attenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
+		}
 		else
 		{
 			SpotLightInfo Light = SpotLights[LightIndex - NumPointLights];
@@ -343,9 +343,9 @@ float3 CalculateSpecular(float3 Normal, float3 Position, float3 View, float2 Scr
 			float Cos = dot(-LightDir, normalize(Light.Direction));
 			float AngleAttenuation = CalculateSpotAngleAttenuation(Cos, Light.InnerConeAngle, Light.OuterConeAngle);
 			
-            float NdotL = dot(Normal, LightDir);
-            FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
-        }
+			float NdotL = saturate(dot(Normal, LightDir));
+			FinalColor += NdotL * Light.Color * Light.Intensity * DistanceAttenuation * AngleAttenuation * Specular(Normal, LightDir, View, Shininess, Normalization);
+		}
 	}
 
 	return FinalColor;
@@ -371,7 +371,7 @@ PS_INPUT mainVS(VS_INPUT Input)
 	Output.Normal = normalize(mul(float4(Input.Normal, 0.0f), NormalMatrix).xyz);
 	Output.Color = Input.Color;
 	Output.UV = Input.UV;
-    Output.Tangent = float4(mul(Input.Tangent.xyz, (float3x3) World), Input.Tangent.w);
+	Output.Tangent = float4(mul(Input.Tangent.xyz, (float3x3) World), Input.Tangent.w);
 	
 #if PER_VERTEX == 1
 	float3 ViewDir = normalize(CameraPosition - Output.WorldPosition);
