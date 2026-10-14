@@ -10,6 +10,7 @@ struct FForwardViewTargets
 	TUniquePtr<FTexture2D> SceneColor;
 	TUniquePtr<FTexture2D> LightingHDR;
 	TUniquePtr<FTexture2D> Depth;
+	TUniquePtr<FTexture2D> WorldNormal;
 	FTileLightCullingResources TileLightResources;
 
 	// FXAA처리가 된 SceneColor로 swap하기 위해 사용된다.
@@ -32,6 +33,7 @@ struct FForwardViewTargets
 		SceneColor.reset();
 		LightingHDR.reset();
 		Depth.reset();
+		WorldNormal.reset();
 	}
 
 	bool IsValidFor(uint32 Width, uint32 Height) const
@@ -44,7 +46,8 @@ struct FForwardViewTargets
 
 		return HasSize(SceneColor) && SceneColor->GetRTV() && SceneColor->GetSRV() &&
 			HasSize(LightingHDR) && LightingHDR->GetRTV() && LightingHDR->GetSRV() &&
-			HasSize(Depth) && Depth->GetDSV() && Depth->GetSRV();
+			HasSize(Depth) && Depth->GetDSV() && Depth->GetSRV() &&
+			HasSize(WorldNormal) && WorldNormal->GetRTV() && WorldNormal->GetSRV();
 	}
 
 	bool Resize(uint32 Width, uint32 Height)
@@ -70,6 +73,7 @@ struct FForwardViewTargets
 
 		Desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		LightingHDR = RenderCommand::CreateTexture2D(Desc);
+		WorldNormal = RenderCommand::CreateTexture2D(Desc);
 
 		// DSV로 쓰고 SRV로 읽을 수 있도록 typeless 리소스로 만든다.
 		Desc.Format = DXGI_FORMAT_R24G8_TYPELESS;

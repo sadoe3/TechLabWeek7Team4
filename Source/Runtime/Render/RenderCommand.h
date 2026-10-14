@@ -10,6 +10,7 @@ class FVertexShader;
 class FPixelShader;
 class FComputeShader;
 struct FDeferredViewTargets;
+struct FForwardViewTargets;
 
 enum class EShaderBindFlagBits : uint32
 {
@@ -84,6 +85,7 @@ public:
 	static void BeginRenderPass(FTexture2D* ColorTarget, FTexture2D* DepthTarget, uint32 Width, uint32 Height);
 	static void BindRenderPassNoClear(FTexture2D* ColorTarget, FTexture2D* DepthTarget, uint32 Width, uint32 Height);
 	static bool BeginGBufferPass(const FDeferredViewTargets& Targets, uint32 Width, uint32 Height);
+	static bool BeginWorldNormalPass(const FForwardViewTargets& Targets, uint32 Width, uint32 Height);
 	static void EndRenderPass();
 	static void ClearDepthStencil(FTexture2D* DepthStencilTexture, float Depth = 1.0f, uint8 Stencil = 0);
 	static void SetRenderTargets(FTexture2D* ColorTarget, FTexture2D* DepthTarget);

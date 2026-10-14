@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "Render/DeferredViewTargets.h"
+#include "Render/ForwardViewTargets.h"
 #include "RenderCommand.h"
 
 #include "PipelineState.h"
@@ -252,6 +253,27 @@ bool RenderCommand::BeginGBufferPass(const FDeferredViewTargets& Targets, uint32
 	};
 	ID3D11DepthStencilView* DSV = Targets.Depth->GetDSV();
 	constexpr float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	Context->ClearRenderTargetView(RTVs[0], ClearColor);
+	Context->ClearRenderTargetView(RTVs[1], ClearColor);
+	Context->ClearDepthStencilView(DSV, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	Context->OMSetRenderTargets(2, RTVs, DSV);
+	SetViewport(0, 0, Width, Height);
+	return true;
+}
+
+bool RenderCommand::BeginWorldNormalPass(const FForwardViewTargets& Targets, uint32 Width, uint32 Height)
+{
+	if (Width == 0 || Height == 0 || !Targets.IsValidFor(Width, Height))
+		return false;
+
+	ID3D11DeviceContext* Context = RenderDevice->GetContext();
+	ID3D11RenderTargetView* RTVs[2] = {
+		Targets.LightingHDR->GetRTV(),
+		Targets.WorldNormal->GetRTV()
+	};
+	ID3D11DepthStencilView* DSV = Targets.Depth->GetDSV();
+	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	Context->ClearRenderTargetView(RTVs[0], ClearColor);
 	Context->ClearRenderTargetView(RTVs[1], ClearColor);
